@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Customer Menu - Savory Haven</title>
+    <link rel="stylesheet" href="../style.css">
+    <link rel="stylesheet" href="customer.css">
+</head>
+<body>
+    <div class="header">
+        <h1>🍽️ Savory Haven</h1>
+        <div class="header-actions">
+            <button class="btn btn-secondary" onclick="showCart()">
+                🛒 Cart (<span id="cartCount">0</span>)
+            </button>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- Menu Section -->
+        <div class="content-section active" id="menuSection">
+            <div class="page-header">
+                <h1>Our Menu</h1>
+                <div class="category-filters">
+                    <button class="filter-btn active" data-category="" onclick="filterMenu('')">All</button>
+                    <button class="filter-btn" data-category="appetizer" onclick="filterMenu('appetizer')">Appetizers</button>
+                    <button class="filter-btn" data-category="main" onclick="filterMenu('main')">Main Course</button>
+                    <button class="filter-btn" data-category="dessert" onclick="filterMenu('dessert')">Desserts</button>
+                    <button class="filter-btn" data-category="beverage" onclick="filterMenu('beverage')">Beverages</button>
+                </div>
+            </div>
+
+            <div class="menu-grid" id="menuGrid">
+                <p style="text-align: center; color: #666;">Loading menu...</p>
+            </div>
+        </div>
+
+        <!-- Cart Section -->
+        <div class="content-section" id="cartSection">
+            <div class="page-header">
+                <h1>Your Cart</h1>
+                <button class="btn btn-secondary" onclick="showMenu()">← Back to Menu</button>
+            </div>
+
+            <div class="cart-container" id="cartContainer">
+                <p style="text-align: center; color: #666;">Your cart is empty</p>
+            </div>
+
+            <div class="cart-summary" id="cartSummary" style="display: none;">
+                <div class="form-group" style="margin-bottom: 1.5rem;">
+                    <label for="tableNumber">Table Number *</label>
+                    <input type="number" id="tableNumber" min="1" placeholder="Enter your table number" required>
+                </div>
+                <div class="form-group" style="margin-bottom: 1.5rem;">
+                    <label for="orderNotes">Special Instructions</label>
+                    <textarea id="orderNotes" rows="3" placeholder="E.g., Spicy level, food allergies, dietary requirements, etc."></textarea>
+                </div>
+                <div class="summary-row">
+                    <span>Subtotal:</span>
+                    <span id="subtotal">£0.00</span>
+                </div>
+                <div class="summary-row">
+                    <span>Tax (10%):</span>
+                    <span id="tax">£0.00</span>
+                </div>
+                <div class="summary-row total">
+                    <span>Total:</span>
+                    <span id="total">£0.00</span>
+                </div>
+                <button class="btn btn-primary" style="width: 100%; margin-top: 1.5rem;" onclick="checkout()">
+                    Place Order
+                </button>
+            </div>
+        </div>
+
+        <!-- Order Confirmation Section -->
+        <div class="content-section" id="orderConfirmationSection">
+            <div style="text-align: center; padding: 3rem 2rem;">
+                <div style="font-size: 4rem; margin-bottom: 1rem;">✅</div>
+                <h1 style="color: #4caf50; margin-bottom: 1rem;">Order Placed Successfully!</h1>
+                <div style="background: white; border-radius: 12px; padding: 2rem; margin: 2rem auto; max-width: 400px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                    <p style="color: #666; margin-bottom: 1rem;">Your Order Number</p>
+                    <h2 id="orderNumberDisplay" style="font-size: 2.5rem; color: #ff6f00; margin-bottom: 1.5rem;">#----</h2>
+                    <p style="color: #333; font-size: 1.1rem; margin-bottom: 0.5rem;">Table: <strong id="tableNumberDisplay">--</strong></p>
+                    <p style="color: #666; font-size: 0.9rem; margin-top: 2rem; padding-top: 1.5rem; border-top: 2px solid #f0f0f0;">
+                        Please proceed to the cash counter to confirm your order and make payment.
+                    </p>
+                </div>
+                <button class="btn btn-primary" onclick="showMenu()" style="margin-top: 2rem;">Order More</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Spicy Level Modal -->
+    <div class="modal" id="spicyLevelModal">
+        <div class="modal-content" style="max-width: 400px;">
+            <div class="modal-header">
+                <h3>🌶️ Select Spicy Level</h3>
+                <button class="close-btn" onclick="closeSpicyLevelModal()">&times;</button>
+            </div>
+            <div style="padding: 1.5rem;">
+                <p style="margin-bottom: 1rem; color: #666;">How spicy would you like your <strong id="spicyItemName"></strong>?</p>
+                <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                    <button class="btn btn-secondary" onclick="selectSpicyLevel('low')" style="text-align: left; padding: 1rem;">
+                        🌶️ Low - Mild heat
+                    </button>
+                    <button class="btn btn-secondary" onclick="selectSpicyLevel('medium')" style="text-align: left; padding: 1rem;">
+                        🌶️🌶️ Medium - Moderate heat
+                    </button>
+                    <button class="btn btn-secondary" onclick="selectSpicyLevel('extra')" style="text-align: left; padding: 1rem;">
+                        🌶️🌶️🌶️ Extra Spicy - Very hot
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <!-- Firebase Configuration from Backend/firebase.js -->
+    <script src="../../Backend/firebase.js"></script>
+    <script src="../script.js"></script>
+    <script src="customer.js"></script>
+</body>
+</html>

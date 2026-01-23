@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Employee Dashboard - Savory Haven</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="employee.css">
+    <link rel="stylesheet" href="customer/customer.css">
+</head>
+<body>
+    <div class="container">
+        <div class="dashboard-header">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <h1>Employee Dashboard</h1>
+                    <p id="employeeName" style="opacity: 0.9; margin-top: 0.5rem;">Welcome back!</p>
+                </div>
+                <div>
+                    <button class="btn btn-secondary" onclick="toggleEmployeeView()" id="toggleViewBtn" style="margin-right: 1rem;">🛒 Customer Order</button>
+                    <button class="btn btn-primary" onclick="logout()">Logout</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="filters" id="orderFilters" style="display: none;">
+            <div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; width: 100%;">
+                <div style="flex: 1; min-width: 200px;">
+                    <input type="text" id="orderSearchInput" placeholder="Search by Order Number (e.g., 1234)" 
+                           style="width: 100%; padding: 0.75rem; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 1rem;"
+                           onkeyup="handleOrderSearch(event)">
+                    <button class="btn btn-secondary" onclick="searchOrder()" style="margin-top: 0.5rem; width: 100%;">Search Order</button>
+                </div>
+                <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                    <button class="filter-btn active" data-status="" onclick="filterOrders('')">All Orders</button>
+                    <button class="filter-btn" data-status="pending" onclick="filterOrders('pending')">Pending</button>
+                    <button class="filter-btn" data-status="preparing" onclick="filterOrders('preparing')">Preparing</button>
+                    <button class="filter-btn" data-status="ready" onclick="filterOrders('ready')">Ready</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Orders View -->
+        <div id="ordersView">
+            <!-- Order Search Results -->
+            <div id="orderSearchResults" style="display: none; margin-bottom: 2rem;">
+                <div class="card">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                        <h2>Order Details</h2>
+                        <button class="btn btn-secondary" onclick="clearOrderSearch()" style="color: purple;">Close</butto>
+                    </div>
+                    <div id="orderDetailsContent"></div>
+                </div>
+            </div>
+            
+            <div class="orders-container" id="ordersContainer">
+                <p style="text-align: center; color: #666;">Loading orders...</p>
+            </div>
+        </div>
+
+        <!-- Customer Order View -->
+        <div id="customerOrderView" style="display: none;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+                <h1>Customer Order</h1>
+                <div>
+                    <button class="btn btn-secondary" onclick="showEmployeeCart()" style="margin-right: 1rem;">
+                        🛒 Cart (<span id="employeeCartCount">0</span>)
+                    </button>
+                    <button class="btn btn-secondary" onclick="showEmployeeOrders()">View Orders</button>
+                </div>
+            </div>
+
+            <!-- Menu View -->
+            <div id="employeeMenuView">
+                <div class="order-filters" style="margin-bottom: 2rem;">
+                    <button class="filter-btn active" data-category="" onclick="filterEmployeeMenu('')">All</button>
+                    <button class="filter-btn" data-category="appetizer" onclick="filterEmployeeMenu('appetizer')">Appetizers</button>
+                    <button class="filter-btn" data-category="main" onclick="filterEmployeeMenu('main')">Main Course</button>
+                    <button class="filter-btn" data-category="dessert" onclick="filterEmployeeMenu('dessert')">Desserts</button>
+                    <button class="filter-btn" data-category="beverage" onclick="filterEmployeeMenu('beverage')">Beverages</button>
+                </div>
+                <div class="menu-grid" id="employeeMenuGrid">
+                    <p style="text-align: center; color: #666;">Loading menu...</p>
+                </div>
+            </div>
+
+            <!-- Cart View -->
+            <div id="employeeCartView" style="display: none;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+                    <h2>Order Cart</h2>
+                    <button class="btn btn-secondary" onclick="showEmployeeMenu()">← Back to Menu</button>
+                </div>
+                <div class="card">
+                    <div id="employeeCartContainer">
+                        <p style="text-align: center; color: #666;">Your cart is empty</p>
+                    </div>
+                    <div id="employeeCartSummary" style="display: none; margin-top: 2rem;">
+                        <div class="form-group">
+                            <label for="employeeTableNumber">Table Number *</label>
+                            <input type="number" id="employeeTableNumber" min="1" placeholder="Enter table number" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="employeeOrderNotes">Special Instructions</label>
+                            <textarea id="employeeOrderNotes" rows="3" placeholder="E.g., Spicy level, food allergies, etc."></textarea>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; padding: 1rem 0; border-top: 2px solid #e0e0e0; margin-top: 1rem;">
+                            <span><strong>Subtotal:</strong></span>
+                            <span id="employeeSubtotal">£0.00</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; padding: 0.5rem 0;">
+                            <span><strong>Tax (10%):</strong></span>
+                            <span id="employeeTax">£0.00</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; padding: 1rem 0; border-top: 2px solid #e0e0e0; font-size: 1.25rem; font-weight: 600; color: #ff6f00;">
+                            <span><strong>Total:</strong></span>
+                            <span id="employeeTotal">£0.00</span>
+                        </div>
+                        <button class="btn btn-primary" style="width: 100%; margin-top: 1.5rem;" onclick="employeeCheckout()">
+                            Place Order (Auto-Confirmed)
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <!-- Firebase Configuration from Backend/firebase.js -->
+    <script src="../Backend/firebase.js"></script>
+    <script src="script.js"></script>
+    <script src="employee.js"></script>
+</body>
+</html>
