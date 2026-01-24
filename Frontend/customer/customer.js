@@ -380,7 +380,6 @@ function renderCart() {
             <div class="cart-item-info">
                 <h4>${item.name}</h4>
                 <p>${formatCurrency(item.price)} each</p>
-                ${item.spicyLevel ? `<p style="font-size: 0.85rem; color: #ff6f00; margin: 0.25rem 0;">🌶️ ${item.spicyLevel === 'normal' ? 'Normal' : item.spicyLevel === 'medium' ? 'Medium' : item.spicyLevel === 'extra' ? 'Extra Spicy' : item.spicyLevel === 'no spicy' ? 'No Spicy' : ''}</p>` : ''}
             </div>
             <div class="cart-item-actions">
                 <div class="quantity-controls">
@@ -449,12 +448,7 @@ async function checkout() {
         const orderNumber = generateOrderNumber();
         let notes = document.getElementById('orderNotes').value || '';
 
-        // Add spicy level information to notes
-        const spicyItems = cart.filter(item => item.spicyLevel);
-        if (spicyItems.length > 0) {
-            const spicyNotes = spicyItems.map(item => `${item.name}: ${item.spicyLevel === 'normal' ? 'Normal' : item.spicyLevel === 'medium' ? 'Medium' : item.spicyLevel === 'extra' ? 'Extra Spicy' : item.spicyLevel === 'no spicy' ? 'No Spicy' : ''}`).join(', ');
-            notes += (notes ? '\n' : '') + 'Spice preferences: ' + spicyNotes;
-        }
+
 
         const orderData = {
             orderNumber: orderNumber,
@@ -514,17 +508,21 @@ function loadCartFromStorage() {
 function selectSpicyLevel(level) {
     if (!pendingSpicyItem) return;
 
-    const cartItem = cart.find(ci => ci.menuItemId === pendingSpicyItem.id && ci.spicyLevel === level);
+    const displayLevel = level === 'normal' ? 'Normal' : level === 'medium' ? 'Medium' : 'Extra Spicy';
+    const itemName = level === 'no spicy' ? pendingSpicyItem.name : pendingSpicyItem.name + ' - ' + displayLevel;
+    const spicyLvl = level === 'no spicy' ? null : level;
+
+    const cartItem = cart.find(ci => ci.menuItemId === pendingSpicyItem.id && ci.spicyLevel === spicyLvl);
 
     if (cartItem) {
         cartItem.quantity++;
     } else {
         cart.push({
             menuItemId: pendingSpicyItem.id,
-            name: pendingSpicyItem.name,
+            name: itemName,
             price: pendingSpicyItem.price,
             quantity: 1,
-            spicyLevel: level
+            spicyLevel: spicyLvl
         });
     }
 

@@ -436,6 +436,33 @@
         </div>
     </div>
 
+    <!-- Spicy Level Modal for Admin Customer Order -->
+    <div class="modal" id="adminSpicyLevelModal">
+        <div class="modal-content" style="max-width: 400px;">
+            <div class="modal-header">
+                <h3>🌶️ Select Spicy Level</h3>
+                <button class="close-btn" onclick="closeAdminSpicyLevelModal()">&times;</button>
+            </div>
+            <div style="padding: 1.5rem;">
+                <p style="margin-bottom: 1rem; color: #666;">How spicy would you like your <strong id="adminSpicyItemName"></strong>?</p>
+                <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                    <button class="btn btn-secondary" onclick="selectAdminSpicyLevel('normal')" style="text-align: left; padding: 1rem;">
+                        🌶️ Normal - Mild heat
+                    </button>
+                    <button class="btn btn-secondary" onclick="selectAdminSpicyLevel('medium')" style="text-align: left; padding: 1rem;">
+                        🌶️🌶️ Medium - Moderate heat
+                    </button>
+                    <button class="btn btn-secondary" onclick="selectAdminSpicyLevel('extra')" style="text-align: left; padding: 1rem;">
+                        🌶️🌶️🌶️ Extra Spicy - Very hot
+                    </button>
+                    <button class="btn btn-secondary" onclick="selectAdminSpicyLevel('no spicy')" style="text-align: left; padding: 1rem;">
+                        No Spicy - No spice
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>

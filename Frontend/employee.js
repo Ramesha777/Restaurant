@@ -219,13 +219,14 @@ let employeeCart = [];
 let employeeMenuItems = [];
 let employeeCurrentCategory = '';
 let employeeCurrentFoodType = '';
+let pendingEmployeeSpicyItem = null;
 
 function toggleEmployeeView() {
     const ordersView = document.getElementById('ordersView');
     const customerOrderView = document.getElementById('customerOrderView');
     const orderFilters = document.getElementById('orderFilters');
     const toggleBtn = document.getElementById('toggleViewBtn');
-    
+
     if (ordersView.style.display === 'none') {
         // Show orders view
         ordersView.style.display = 'block';
@@ -250,7 +251,7 @@ function showEmployeeOrders() {
 
 async function loadEmployeeMenu() {
     try {
-        const snapshot = await firebase.firestore().collection('menu').orderBy('category').get();
+        const snapshot = await firebase.firestore().collection('menu').get();
         employeeMenuItems = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         renderEmployeeMenu();
     } catch (error) {
@@ -428,9 +429,17 @@ function renderEmployeeMenuGrid(items) {
 function increaseEmployeeQuantity(menuItemId) {
     const item = employeeMenuItems.find(m => m.id === menuItemId);
     if (!item || item.available === false) return;
-    
-    const cartItem = employeeCart.find(ci => ci.menuItemId === menuItemId);
-    
+
+    // Check if item is spicy and ask for spicy level
+    if (item.spicyLevel === 'ask') {
+        pendingEmployeeSpicyItem = item;
+        document.getElementById('employeeSpicyItemName').textContent = item.name;
+        document.getElementById('employeeSpicyLevelModal').classList.add('active');
+        return;
+    }
+
+    const cartItem = employeeCart.find(ci => ci.menuItemId === menuItemId && ci.spicyLevel === null);
+
     if (cartItem) {
         cartItem.quantity++;
     } else {
@@ -438,10 +447,11 @@ function increaseEmployeeQuantity(menuItemId) {
             menuItemId: item.id,
             name: item.name,
             price: item.price,
-            quantity: 1
+            quantity: 1,
+            spicyLevel: null
         });
     }
-    
+
     updateEmployeeCartCount();
     renderEmployeeMenu();
 }
@@ -564,7 +574,8 @@ async function employeeCheckout() {
                 menuItemId: item.menuItemId,
                 name: item.name,
                 price: item.price,
-                quantity: item.quantity
+                quantity: item.quantity,
+                spicyLevel: item.spicyLevel || null
             })),
             notes: notes,
             subtotal,
@@ -578,15 +589,21 @@ async function employeeCheckout() {
         
         await firebase.firestore().collection('orders').add(orderData);
         
-        // Clear cart
+        // Clear cart and order details
         employeeCart = [];
         updateEmployeeCartCount();
-        document.getElementById('employeeTableNumber').value = '';
-        document.getElementById('employeeOrderNotes').value = '';
-        
+
+        // Clear the order details section
+        document.getElementById('currentOrderTableNumber').value = '';
+        document.getElementById('currentOrderNotes').value = '';
+
+        // Clear localStorage
+        localStorage.removeItem('employeeCurrentTableNumber');
+        localStorage.removeItem('employeeCurrentNotes');
+
         showNotification(`Order #${orderNumber} placed and confirmed successfully!`, 'success');
         showEmployeeMenu();
-        
+
         // Reload orders
         if (document.getElementById('ordersView').style.display !== 'none') {
             loadOrders();
@@ -722,8 +739,20 @@ function displayOrderDetails(order) {
                     <p style="font-size: 1.5rem; color: #ff6f00; margin-top: 0.5rem;">#${order.orderNumber}</p>
                 </div>
                 <div>
-                    <strong>Table Number:</strong>
-                    <p style="font-size: 1.2rem; margin-top: 0.5rem;">${tableNumber}</p>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                        <strong>Table Number:</strong>
+                        <button class="btn btn-small btn-secondary" onclick="startEditTableNumber('${order.id}', '${tableNumber}')" id="editTableBtn_${order.id}">
+                            ✏️ Edit
+                        </button>
+                    </div>
+                    <div id="tableDisplay_${order.id}" style="font-size: 1.2rem;">${tableNumber}</div>
+                    <div id="tableEdit_${order.id}" style="display: none;">
+                        <input type="number" id="tableInput_${order.id}" value="${tableNumber === 'N/A' ? '' : tableNumber}" min="1" placeholder="Enter table number" style="padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px; width: 150px; margin-bottom: 0.5rem;">
+                        <div style="display: flex; gap: 0.5rem;">
+                            <button class="btn btn-small btn-primary" onclick="saveTableNumber('${order.id}')">Save</button>
+                            <button class="btn btn-small btn-secondary" onclick="cancelEditTableNumber('${order.id}', '${tableNumber}')">Cancel</button>
+                        </div>
+                    </div>
                 </div>
                 <div>
                     <strong>Customer:</strong>
@@ -750,8 +779,20 @@ function displayOrderDetails(order) {
             </div>
 
             <div style="margin-bottom: 1.5rem;">
-                <strong>Special Instructions:</strong>
-                <p style="margin-top: 0.5rem; padding: 1rem; background: #f5f5f5; border-radius: 8px;">${notes}</p>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                    <strong>Special Instructions:</strong>
+                    <button class="btn btn-small btn-secondary" onclick="startEditNotes('${order.id}', '${notes.replace(/'/g, "\\'")}')" id="editNotesBtn_${order.id}">
+                        ✏️ Edit
+                    </button>
+                </div>
+                <div id="notesDisplay_${order.id}" style="padding: 1rem; background: #f5f5f5; border-radius: 8px;">${notes}</div>
+                <div id="notesEdit_${order.id}" style="display: none;">
+                    <textarea id="notesInput_${order.id}" style="width: 100%; padding: 1rem; border: 1px solid #ddd; border-radius: 8px; min-height: 80px; margin-bottom: 0.5rem;">${notes}</textarea>
+                    <div style="display: flex; gap: 0.5rem;">
+                        <button class="btn btn-small btn-primary" onclick="saveNotes('${order.id}')">Save</button>
+                        <button class="btn btn-small btn-secondary" onclick="cancelEditNotes('${order.id}', '${notes.replace(/'/g, "\\'")}')">Cancel</button>
+                    </div>
+                </div>
             </div>
 
             <div style="margin-bottom: 1.5rem;">
@@ -1177,40 +1218,63 @@ async function addItemToOrder(orderId) {
 }
 
 async function openEditOrderModal(orderId) {
-    // For now, use a simple prompt-based edit
-    // In a full implementation, you'd have a modal with form fields
-    const orderRef = firebase.firestore().collection('orders').doc(orderId);
-    const orderDoc = await orderRef.get();
-    const orderData = orderDoc.data();
-    
-    const newTableNumber = prompt(`Edit table number (current: ${orderData.tableNumber || 'N/A'}):`, orderData.tableNumber || '');
-    if (newTableNumber === null) return;
-    
-    const newNotes = prompt(`Edit special instructions (current: ${orderData.notes || 'None'}):`, orderData.notes || '');
-    if (newNotes === null) return;
-    
     try {
-        await orderRef.update({
-            tableNumber: parseInt(newTableNumber) || orderData.tableNumber,
-            notes: newNotes
+        const orderRef = firebase.firestore().collection('orders').doc(orderId);
+        const orderDoc = await orderRef.get();
+        const orderData = orderDoc.data();
+
+        // Populate the modal with current values
+        document.getElementById('employeeEditOrderId').value = orderId;
+        document.getElementById('employeeEditTableNumber').value = orderData.tableNumber || '';
+        document.getElementById('employeeEditOrderNotes').value = orderData.notes || '';
+
+        // Show the modal
+        document.getElementById('employeeEditOrderModal').classList.add('active');
+    } catch (error) {
+        console.error('Error loading order for edit:', error);
+        showNotification('Error loading order details', 'error');
+    }
+}
+
+function closeEmployeeEditOrderModal() {
+    document.getElementById('employeeEditOrderModal').classList.remove('active');
+    document.getElementById('employeeEditOrderForm').reset();
+}
+
+// Handle employee edit order form submission
+document.getElementById('employeeEditOrderForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const orderId = document.getElementById('employeeEditOrderId').value;
+    const newTableNumber = document.getElementById('employeeEditTableNumber').value;
+    const newNotes = document.getElementById('employeeEditOrderNotes').value;
+
+    try {
+        await firebase.firestore().collection('orders').doc(orderId).update({
+            tableNumber: parseInt(newTableNumber) || null,
+            notes: newNotes || ''
         });
-        
-        showNotification('Order updated', 'success');
-        
+
+        showNotification('Order updated successfully', 'success');
+
         // Refresh order details
         if (searchedOrder && searchedOrder.id === orderId) {
-            searchedOrder.tableNumber = parseInt(newTableNumber) || orderData.tableNumber;
-            searchedOrder.notes = newNotes;
+            searchedOrder.tableNumber = parseInt(newTableNumber) || null;
+            searchedOrder.notes = newNotes || '';
             displayOrderDetails(searchedOrder);
         }
-        
+
+        // Reload orders to show updated status
         loadOrders();
-        
+
+        // Close modal
+        closeEmployeeEditOrderModal();
+
     } catch (error) {
         console.error('Error updating order:', error);
         showNotification('Error updating order', 'error');
     }
-}
+});
 
 async function updateOrderStatus(orderId, newStatus) {
     try {
@@ -1441,4 +1505,118 @@ async function decreaseOrderItemQuantity(orderId, itemName, currentQuantity) {
         console.error('Error decreasing item quantity:', error);
         showNotification('Error decreasing item quantity', 'error');
     }
+}
+
+// Employee Spicy Level Functions
+function selectEmployeeSpicyLevel(level) {
+    if (!pendingEmployeeSpicyItem) return;
+
+    const displayLevel = level === 'normal' ? 'Normal' : level === 'medium' ? 'Medium' : 'Extra Spicy';
+    const itemName = level === 'no spicy' ? pendingEmployeeSpicyItem.name : pendingEmployeeSpicyItem.name + ' - ' + displayLevel;
+    const spicyLvl = level === 'no spicy' ? null : level;
+
+    const cartItem = employeeCart.find(ci => ci.menuItemId === pendingEmployeeSpicyItem.id && ci.spicyLevel === spicyLvl);
+
+    if (cartItem) {
+        cartItem.quantity++;
+    } else {
+        employeeCart.push({
+            menuItemId: pendingEmployeeSpicyItem.id,
+            name: itemName,
+            price: pendingEmployeeSpicyItem.price,
+            quantity: 1,
+            spicyLevel: spicyLvl
+        });
+    }
+
+    updateEmployeeCartCount();
+    renderEmployeeMenu();
+    showNotification('Item added to cart', 'success');
+
+    closeEmployeeSpicyLevelModal();
+}
+
+function closeEmployeeSpicyLevelModal() {
+    document.getElementById('employeeSpicyLevelModal').classList.remove('active');
+    pendingEmployeeSpicyItem = null;
+}
+
+
+
+// Inline editing functions for order details
+function startEditTableNumber(orderId, currentValue) {
+    document.getElementById(`tableDisplay_${orderId}`).style.display = 'none';
+    document.getElementById(`tableEdit_${orderId}`).style.display = 'block';
+    document.getElementById(`editTableBtn_${orderId}`).style.display = 'none';
+}
+
+async function saveTableNumber(orderId) {
+    const newValue = document.getElementById(`tableInput_${orderId}`).value;
+    const tableNumber = parseInt(newValue) || null;
+
+    try {
+        await firebase.firestore().collection('orders').doc(orderId).update({
+            tableNumber: tableNumber
+        });
+
+        showNotification('Table number updated successfully', 'success');
+
+        // Refresh order details
+        if (searchedOrder && searchedOrder.id === orderId) {
+            searchedOrder.tableNumber = tableNumber;
+            displayOrderDetails(searchedOrder);
+        }
+
+        // Reload orders to show updated status
+        loadOrders();
+
+    } catch (error) {
+        console.error('Error updating table number:', error);
+        showNotification('Error updating table number', 'error');
+    }
+}
+
+function cancelEditTableNumber(orderId, originalValue) {
+    document.getElementById(`tableInput_${orderId}`).value = originalValue === 'N/A' ? '' : originalValue;
+    document.getElementById(`tableDisplay_${orderId}`).style.display = 'block';
+    document.getElementById(`tableEdit_${orderId}`).style.display = 'none';
+    document.getElementById(`editTableBtn_${orderId}`).style.display = 'inline-block';
+}
+
+function startEditNotes(orderId, currentValue) {
+    document.getElementById(`notesDisplay_${orderId}`).style.display = 'none';
+    document.getElementById(`notesEdit_${orderId}`).style.display = 'block';
+    document.getElementById(`editNotesBtn_${orderId}`).style.display = 'none';
+}
+
+async function saveNotes(orderId) {
+    const newValue = document.getElementById(`notesInput_${orderId}`).value;
+
+    try {
+        await firebase.firestore().collection('orders').doc(orderId).update({
+            notes: newValue || ''
+        });
+
+        showNotification('Notes updated successfully', 'success');
+
+        // Refresh order details
+        if (searchedOrder && searchedOrder.id === orderId) {
+            searchedOrder.notes = newValue || '';
+            displayOrderDetails(searchedOrder);
+        }
+
+        // Reload orders to show updated status
+        loadOrders();
+
+    } catch (error) {
+        console.error('Error updating notes:', error);
+        showNotification('Error updating notes', 'error');
+    }
+}
+
+function cancelEditNotes(orderId, originalValue) {
+    document.getElementById(`notesInput_${orderId}`).value = originalValue;
+    document.getElementById(`notesDisplay_${orderId}`).style.display = 'block';
+    document.getElementById(`notesEdit_${orderId}`).style.display = 'none';
+    document.getElementById(`editNotesBtn_${orderId}`).style.display = 'inline-block';
 }

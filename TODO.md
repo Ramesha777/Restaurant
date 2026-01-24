@@ -10,4 +10,6 @@
   - Update selectSpicyLevel function for new values
   - Update renderCart display for new spicy levels
   - Update checkout notes mapping
+- [x] Update admin customer order section: Add spicy level modal and functionality
+- [x] Update employee order section: Add spicy level modal and functionality
 - [x] Test the implementation

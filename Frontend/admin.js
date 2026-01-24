@@ -988,9 +988,17 @@ function renderAdminMenuGrid(items) {
 function increaseAdminQuantity(menuItemId) {
     const item = adminMenuItems.find(m => m.id === menuItemId);
     if (!item || item.available === false) return;
-    
-    const cartItem = adminCart.find(ci => ci.menuItemId === menuItemId);
-    
+
+    // Check if item is spicy and ask for spicy level
+    if (item.spicyLevel === 'ask') {
+        pendingAdminSpicyItem = item;
+        document.getElementById('adminSpicyItemName').textContent = item.name;
+        document.getElementById('adminSpicyLevelModal').classList.add('active');
+        return;
+    }
+
+    const cartItem = adminCart.find(ci => ci.menuItemId === menuItemId && ci.spicyLevel === null);
+
     if (cartItem) {
         cartItem.quantity++;
     } else {
@@ -998,10 +1006,11 @@ function increaseAdminQuantity(menuItemId) {
             menuItemId: item.id,
             name: item.name,
             price: item.price,
-            quantity: 1
+            quantity: 1,
+            spicyLevel: null
         });
     }
-    
+
     updateAdminCartCount();
     renderAdminMenu();
 }
@@ -1189,7 +1198,8 @@ async function adminCheckout() {
                     menuItemId: item.menuItemId,
                     name: item.name,
                     price: item.price,
-                    quantity: item.quantity
+                    quantity: item.quantity,
+                    spicyLevel: item.spicyLevel || null
                 })),
                 notes: notes,
                 subtotal,
@@ -1711,6 +1721,7 @@ async function adminUpdateOrderItem(orderId, itemName, newQuantity, itemPrice) {
 }
 
 let adminEditingOrderId = null; // Store the order ID being edited
+let pendingAdminSpicyItem = null;
 
 async function adminAddItemToOrder(orderId) {
     try {
@@ -1775,7 +1786,7 @@ async function adminOpenEditOrderModal(orderId) {
         if (adminSearchedOrder && adminSearchedOrder.id === orderId) {
             adminSearchedOrder.tableNumber = parseInt(newTableNumber) || orderData.tableNumber;
             adminSearchedOrder.notes = newNotes;
-            adminDisplayOrderDetails(adminSearchedOrder);
+            adminDisplayOrderDetails2(adminSearchedOrder);
         }
         
         loadOrders();
@@ -1857,4 +1868,38 @@ async function adminRecordPayment(orderId, paymentMethod) {
         console.error('Error recording payment:', error);
         showNotification('Error recording payment', 'error');
     }
+}
+
+// Admin Spicy Level Functions
+function selectAdminSpicyLevel(level) {
+    if (!pendingAdminSpicyItem) return;
+
+    const displayLevel = level === 'normal' ? 'Normal' : level === 'medium' ? 'Medium' : 'Extra Spicy';
+    const itemName = level === 'no spicy' ? pendingAdminSpicyItem.name : pendingAdminSpicyItem.name + ' - ' + displayLevel;
+    const spicyLvl = level === 'no spicy' ? null : level;
+
+    const cartItem = adminCart.find(ci => ci.menuItemId === pendingAdminSpicyItem.id && ci.spicyLevel === spicyLvl);
+
+    if (cartItem) {
+        cartItem.quantity++;
+    } else {
+        adminCart.push({
+            menuItemId: pendingAdminSpicyItem.id,
+            name: itemName,
+            price: pendingAdminSpicyItem.price,
+            quantity: 1,
+            spicyLevel: spicyLvl
+        });
+    }
+
+    updateAdminCartCount();
+    renderAdminMenu();
+    showNotification('Item added to cart', 'success');
+
+    closeAdminSpicyLevelModal();
+}
+
+function closeAdminSpicyLevelModal() {
+    document.getElementById('adminSpicyLevelModal').classList.remove('active');
+    pendingAdminSpicyItem = null;
 }
