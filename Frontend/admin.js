@@ -14,6 +14,16 @@ if (typeof firebase !== 'undefined' && firebase.auth) {
             return;
         }
         
+        // Update welcome message with admin name
+        const adminName = userData.name || 'Admin';
+        const welcomeMsg = document.getElementById('adminWelcomeMsg');
+        if (welcomeMsg) {
+            welcomeMsg.textContent = `Welcome back, ${adminName}! 🙏`;
+            // increase font size and bold the welcome message
+            welcomeMsg.style.fontSize = '1.2rem';
+            welcomeMsg.style.fontWeight = 'bold';
+        }
+        
         initializeDashboard();
     });
 } else {
@@ -31,185 +41,7 @@ let adminCurrentCategory = '';
 let adminCurrentFoodType = '';
 let currentAdminName = '';
 
-// Function to ensure sample data exists
-async function ensureSampleData() {
-    try {
-        // Check if menu items exist
-        const menuSnapshot = await firebase.firestore().collection('menu').get();
-        if (menuSnapshot.empty) {
-            // Create sample menu items
-            const sampleMenuItems = [
-                {
-                    name: 'Chicken Momo',
-                    description: 'Steamed dumplings filled with spiced chicken',
-                    category: 'appetizer',
-                    subcategory: 'non-veg',
-                    foodType: 'momo',
-                    price: 8.99,
-                    spicyLevel: 'false',
-                    available: true,
-                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
-                },
-                {
-                    name: 'Paneer Butter Masala',
-                    description: 'Creamy tomato-based curry with paneer',
-                    category: 'main',
-                    subcategory: 'veg',
-                    foodType: 'curry',
-                    price: 12.99,
-                    spicyLevel: 'true',
-                    available: true,
-                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
-                },
-                {
-                    name: 'Chocolate Cake',
-                    description: 'Rich chocolate cake with vanilla frosting',
-                    category: 'dessert',
-                    subcategory: 'veg',
-                    foodType: 'cake',
-                    price: 6.99,
-                    spicyLevel: 'false',
-                    available: true,
-                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
-                },
-                {
-                    name: 'Masala Chai',
-                    description: 'Traditional spiced tea',
-                    category: 'beverage',
-                    subcategory: 'veg',
-                    foodType: 'tea',
-                    price: 3.99,
-                    spicyLevel: 'false',
-                    available: true,
-                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
-                }
-            ];
-
-            const batch = firebase.firestore().batch();
-            sampleMenuItems.forEach(item => {
-                const ref = firebase.firestore().collection('menu').doc();
-                batch.set(ref, item);
-            });
-            await batch.commit();
-            console.log('Sample menu items created');
-        }
-
-        // Check if orders exist
-        const ordersSnapshot = await firebase.firestore().collection('orders').get();
-        if (ordersSnapshot.empty) {
-            // Create sample orders
-            const sampleOrders = [
-                {
-                    orderNumber: '1001',
-                    tableNumber: 5,
-                    customerName: 'John Smith',
-                    items: [
-                        {
-                            menuItemId: 'sample1',
-                            name: 'Chicken Momo',
-                            price: 8.99,
-                            quantity: 2
-                        },
-                        {
-                            menuItemId: 'sample2',
-                            name: 'Masala Chai',
-                            price: 3.99,
-                            quantity: 1
-                        }
-                    ],
-                    subtotal: 21.97,
-                    tax: 2.20,
-                    total: 24.17,
-                    status: 'completed',
-                    paymentStatus: 'confirmed',
-                    confirmedBy: 'Admin',
-                    notes: 'Extra spicy please',
-                    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-                    paymentConfirmedAt: firebase.firestore.FieldValue.serverTimestamp()
-                },
-                {
-                    orderNumber: '1002',
-                    tableNumber: 3,
-                    customerName: 'Sarah Johnson',
-                    items: [
-                        {
-                            menuItemId: 'sample3',
-                            name: 'Paneer Butter Masala',
-                            price: 12.99,
-                            quantity: 1
-                        },
-                        {
-                            menuItemId: 'sample4',
-                            name: 'Chocolate Cake',
-                            price: 6.99,
-                            quantity: 1
-                        }
-                    ],
-                    subtotal: 19.98,
-                    tax: 2.00,
-                    total: 21.98,
-                    status: 'preparing',
-                    paymentStatus: 'pending',
-                    notes: 'No onions please',
-                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
-                }
-            ];
-
-            const batch = firebase.firestore().batch();
-            sampleOrders.forEach(order => {
-                const ref = firebase.firestore().collection('orders').doc();
-                batch.set(ref, order);
-            });
-            await batch.commit();
-            console.log('Sample orders created');
-        }
-
-        // Check if users exist
-        const usersSnapshot = await firebase.firestore().collection('users').get();
-        if (usersSnapshot.empty) {
-            // Create sample users
-            const sampleUsers = [
-                {
-                    name: 'Admin User',
-                    email: 'admin@savoryhaven.com',
-                    phone: '+1234567890',
-                    role: 'admin',
-                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
-                },
-                {
-                    name: 'John Staff',
-                    email: 'john.staff@savoryhaven.com',
-                    phone: '+1234567891',
-                    role: 'staff',
-                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
-                },
-                {
-                    name: 'Jane Manager',
-                    email: 'jane.manager@savoryhaven.com',
-                    phone: '+1234567892',
-                    role: 'manager',
-                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
-                }
-            ];
-
-            const batch = firebase.firestore().batch();
-            sampleUsers.forEach(user => {
-                const ref = firebase.firestore().collection('users').doc();
-                batch.set(ref, user);
-            });
-            await batch.commit();
-            console.log('Sample users created');
-        }
-
-    } catch (error) {
-        console.error('Error ensuring sample data:', error);
-    }
-}
-
 async function initializeDashboard() {
-    // Ensure sample data exists first
-    await ensureSampleData();
-
     // Sidebar navigation
     document.querySelectorAll('.sidebar-menu li').forEach(item => {
         item.addEventListener('click', () => {
@@ -240,9 +72,6 @@ async function initializeDashboard() {
 
 async function loadOverview() {
     try {
-        // Ensure sample data exists
-        await ensureSampleData();
-
         const orders = await firebase.firestore().collection('orders').get();
         const menuItems = await firebase.firestore().collection('menu').get();
 
@@ -344,9 +173,6 @@ function updateSubcategoryOptions() {
 
 async function loadMenuItems() {
     try {
-        // Ensure sample data exists
-        await ensureSampleData();
-
         const snapshot = await firebase.firestore().collection('menu').get();
         const items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
@@ -379,9 +205,6 @@ async function loadMenuItems() {
 
 async function loadOrders() {
     try {
-        // Ensure sample data exists
-        await ensureSampleData();
-
         let query = firebase.firestore().collection('orders');
         const statusFilter = document.getElementById('orderStatusFilter').value;
         if (statusFilter) {
@@ -454,9 +277,6 @@ async function loadStaff() {
 
 async function loadUsers() {
     try {
-        // Ensure sample data exists
-        await ensureSampleData();
-
         const snapshot = await firebase.firestore().collection('users')
             .where('role', 'in', ['staff', 'manager', 'admin'])
             .get();
@@ -860,9 +680,6 @@ function adminSubscribeToOrders() {
 
 async function adminLoadOrders() {
     try {
-        // Ensure sample data exists
-        await ensureSampleData();
-
         let query = firebase.firestore().collection('orders');
 
         if (adminCurrentFilter) {
@@ -940,10 +757,6 @@ async function adminDisplayOrders(orders) {
 
 async function loadAdminMenu() {
     try {
-        console.log('Loading admin menu...');
-        // Ensure sample data exists
-        await ensureSampleData();
-
         const snapshot = await firebase.firestore().collection('menu').get();
         adminMenuItems = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
@@ -1124,11 +937,9 @@ function renderAdminCart() {
     
     // Calculate totals
     const subtotal = adminCart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-    const tax = subtotal * 0.1;
-    const total = subtotal + tax;
+    const total = subtotal;
     
     document.getElementById('adminSubtotal').textContent = formatCurrency(subtotal);
-    document.getElementById('adminTax').textContent = formatCurrency(tax);
     document.getElementById('adminTotal').textContent = formatCurrency(total);
     
     cartSummary.style.display = 'block';
@@ -1204,9 +1015,8 @@ async function adminCheckout() {
             // Update order with new items and totals
             await orderRef.update({
                 items: updatedItems,
-                subtotal,
-                tax,
-                total,
+            subtotal,
+            total,
                 updatedAt: firebase.firestore.FieldValue.serverTimestamp()
             });
 
@@ -1235,10 +1045,9 @@ async function adminCheckout() {
                 return;
             }
 
-            const subtotal = adminCart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-            const tax = subtotal * 0.1;
-            const total = subtotal + tax;
-            const orderNumber = generateOrderNumber();
+        const subtotal = adminCart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+        const total = subtotal;
+        const orderNumber = generateOrderNumber();
             const notes = document.getElementById('adminOrderNotes').value || '';
 
             const orderData = {
@@ -1253,7 +1062,6 @@ async function adminCheckout() {
                 })),
                 notes: notes,
                 subtotal,
-                tax,
                 total,
                 status: 'completed', // Auto-completed for admin orders
                 paymentStatus: 'confirmed', // Auto-confirmed for admin orders
@@ -1661,7 +1469,7 @@ async function adminPrintBill(orderOrId) {
         </head>
         <body>
             <div class="header">
-                <h1>SAVORY HAVEN</h1>
+                <h1>Ramesh DaDa Restaurant</h1>
                 <p>Restaurant Bill</p>
             </div>
 
@@ -1759,7 +1567,6 @@ async function adminUpdateOrderItem(orderId, itemName, newQuantity, itemPrice) {
         if (adminSearchedOrder && adminSearchedOrder.id === orderId) {
             adminSearchedOrder.items = filteredItems;
             adminSearchedOrder.subtotal = subtotal;
-            adminSearchedOrder.tax = tax;
             adminSearchedOrder.total = total;
             adminDisplayOrderDetails(adminSearchedOrder);
         }

@@ -1,6 +1,11 @@
 // Firebase Configuration and Initialization
 // Replace these values with your Firebase project credentials
 
+// SECURITY NOTE:
+// 1. Go to Firebase Console > Authentication > Settings > Authorized Domains
+//    and add your production domain (e.g., your-restaurant.com).
+// 2. Go to Google Cloud Console > APIs & Services > Credentials
+//    and restrict this API Key to your specific HTTP Referrers (domains).
 const firebaseConfig = {
     apiKey: "AIzaSyDmGbIhwAXDxUrZDUZn_swF6uQYj-RSb7Q",
     authDomain: "restaurant-testing-3725d.firebaseapp.com",

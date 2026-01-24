@@ -332,11 +332,9 @@ function renderCart() {
     
     // Calculate totals
     const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-    const tax = subtotal * 0.1;
-    const total = subtotal + tax;
+    const total = subtotal;
     
     document.getElementById('subtotal').textContent = formatCurrency(subtotal);
-    document.getElementById('tax').textContent = formatCurrency(tax);
     document.getElementById('total').textContent = formatCurrency(total);
     
     cartSummary.style.display = 'block';
@@ -381,8 +379,7 @@ async function checkout() {
 
     try {
         const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-        const tax = subtotal * 0.1;
-        const total = subtotal + tax;
+        const total = subtotal;
         const orderNumber = generateOrderNumber();
         let notes = document.getElementById('orderNotes').value || '';
 
@@ -406,7 +403,6 @@ async function checkout() {
             })),
             notes: notes,
             subtotal,
-            tax,
             total,
             status: 'pending',
             paymentStatus: 'pending',

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Dashboard - Savory Haven</title>
+    <title>Admin Dashboard - Ramesh DaDa Restaurant</title>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="customer/customer.css">
     <link rel="stylesheet" href="admin.css">
@@ -12,7 +12,7 @@
     <div class="dashboard">
         <div class="sidebar">
             <div style="padding: 0 2rem; margin-bottom: 2rem;">
-                <h2>Savory Haven</h2>
+                <h2>Ramesh DaDa Restaurant</h2>
                 <p style="opacity: 0.8; font-size: 0.9rem;">Admin Dashboard</p>
             </div>
             <ul class="sidebar-menu">
@@ -29,7 +29,7 @@
             <div style="display: flex; justify-content: space-between; align-items: center; padding: 1rem 0; border-bottom: 2px solid #e0e0e0; margin-bottom: 2rem;">
                 <div>
                     <h1 style="margin: 0; color: #333;">Admin Dashboard</h1>
-                    <p style="margin: 0.5rem 0 0 0; color: #666; font-size: 0.9rem;">Welcome back, Admin</p>
+                    <p id="adminWelcomeMsg" style="margin: 0.5rem 0 0 0; color: #666; font-size: 0.9rem;">Welcome back, Admin</p>
                 </div>
                 <button class="btn btn-danger" onclick="logout()" style="padding: 0.75rem 1.5rem;">
                     🚪 Logout
@@ -203,6 +203,8 @@
                 </div>
 
                 <!-- Menu View -->
+
+            <!-- Asking for Categoriess and Food Types-->
                 <div id="adminMenuView">
                     <div class="order-filters" style="margin-bottom: 2rem;">
                         <div style="margin-bottom: 1rem;">
@@ -310,8 +312,8 @@
                 <div class="form-group">
                     <label>Spicy Level</label>
                     <select id="itemSpicyLevel">
-                        <option value="false">Not Spicy</option>
-                        <option value="true">Spicy</option>
+                        <option value="false">Not Needed</option>
+                        <option value="true">Ask</option>
                     </select>
                 </div>
                 <div class="form-group">
@@ -354,7 +356,6 @@
                     <label>Role</label>
                     <select id="userRole" required>
                         <option value="staff">Staff</option>
-                        <option value="manager">Manager</option>
                         <option value="admin">Admin</option>
                     </select>
                 </div>

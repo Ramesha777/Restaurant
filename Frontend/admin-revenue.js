@@ -160,17 +160,15 @@ async function adminRemoveOrderItem(orderId, itemName) {
 
         // Recalculate totals
         const subtotal = updatedItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-        const tax = subtotal * 0.1;
         const discountAmount = orderData.discountAmount || 0;
         const discountType = orderData.discountType || 'fixed';
         const discountValue = discountType === 'percentage' ? (subtotal * discountAmount / 100) : discountAmount;
-        const total = Math.max(0, subtotal + tax - discountValue);
+        const total = Math.max(0, subtotal - discountValue);
 
         // Update order
         await orderRef.update({
             items: updatedItems,
             subtotal,
-            tax,
             total,
             updatedAt: firebase.firestore.FieldValue.serverTimestamp()
         });
@@ -181,7 +179,6 @@ async function adminRemoveOrderItem(orderId, itemName) {
         if (typeof adminSearchedOrder !== 'undefined' && adminSearchedOrder && adminSearchedOrder.id === orderId) {
             adminSearchedOrder.items = updatedItems;
             adminSearchedOrder.subtotal = subtotal;
-            adminSearchedOrder.tax = tax;
             adminSearchedOrder.total = total;
             if (typeof adminDisplayOrderDetails2 === 'function') {
                 adminDisplayOrderDetails2(adminSearchedOrder);
@@ -222,17 +219,15 @@ async function adminIncreaseOrderItemQuantity(orderId, itemName, currentQuantity
 
         // Recalculate totals
         const subtotal = updatedItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-        const tax = subtotal * 0.1;
         const discountAmount = orderData.discountAmount || 0;
         const discountType = orderData.discountType || 'fixed';
         const discountValue = discountType === 'percentage' ? (subtotal * discountAmount / 100) : discountAmount;
-        const total = Math.max(0, subtotal + tax - discountValue);
+        const total = Math.max(0, subtotal - discountValue);
 
         // Update order
         await orderRef.update({
             items: updatedItems,
             subtotal,
-            tax,
             total,
             updatedAt: firebase.firestore.FieldValue.serverTimestamp()
         });
@@ -243,7 +238,6 @@ async function adminIncreaseOrderItemQuantity(orderId, itemName, currentQuantity
         if (typeof adminSearchedOrder !== 'undefined' && adminSearchedOrder && adminSearchedOrder.id === orderId) {
             adminSearchedOrder.items = updatedItems;
             adminSearchedOrder.subtotal = subtotal;
-            adminSearchedOrder.tax = tax;
             adminSearchedOrder.total = total;
             if (typeof adminDisplayOrderDetails2 === 'function') {
                 adminDisplayOrderDetails2(adminSearchedOrder);
@@ -290,17 +284,15 @@ async function adminDecreaseOrderItemQuantity(orderId, itemName, currentQuantity
 
         // Recalculate totals
         const subtotal = updatedItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-        const tax = subtotal * 0.1;
         const discountAmount = orderData.discountAmount || 0;
         const discountType = orderData.discountType || 'fixed';
         const discountValue = discountType === 'percentage' ? (subtotal * discountAmount / 100) : discountAmount;
-        const total = Math.max(0, subtotal + tax - discountValue);
+        const total = Math.max(0, subtotal - discountValue);
 
         // Update order
         await orderRef.update({
             items: updatedItems,
             subtotal,
-            tax,
             total,
             updatedAt: firebase.firestore.FieldValue.serverTimestamp()
         });
@@ -311,7 +303,6 @@ async function adminDecreaseOrderItemQuantity(orderId, itemName, currentQuantity
         if (typeof adminSearchedOrder !== 'undefined' && adminSearchedOrder && adminSearchedOrder.id === orderId) {
             adminSearchedOrder.items = updatedItems;
             adminSearchedOrder.subtotal = subtotal;
-            adminSearchedOrder.tax = tax;
             adminSearchedOrder.total = total;
             if (typeof adminDisplayOrderDetails2 === 'function') {
                 adminDisplayOrderDetails2(adminSearchedOrder);
@@ -349,7 +340,6 @@ async function adminUpdateDiscount(orderId, discountAmount) {
 
         const orderData = orderDoc.data();
         const subtotal = orderData.subtotal || 0;
-        const tax = orderData.tax || 0;
         const discountType = orderData.discountType || 'fixed';
 
         // Calculate discount value
@@ -362,7 +352,7 @@ async function adminUpdateDiscount(orderId, discountAmount) {
         }
 
         // Calculate new total
-        const total = Math.max(0, subtotal + tax - discountValue);
+        const total = Math.max(0, subtotal - discountValue);
 
         // Update order
         await orderRef.update({
@@ -406,7 +396,6 @@ async function adminUpdateDiscountType(orderId, discountType) {
 
         const orderData = orderDoc.data();
         const subtotal = orderData.subtotal || 0;
-        const tax = orderData.tax || 0;
         const discountAmount = orderData.discountAmount || 0;
 
         // Calculate discount value based on new type
@@ -419,14 +408,14 @@ async function adminUpdateDiscountType(orderId, discountType) {
             await orderRef.update({
                 discountType,
                 discountAmount: 0,
-                total: subtotal + tax,
+                total: subtotal,
                 updatedAt: firebase.firestore.FieldValue.serverTimestamp()
             });
             
             if (typeof adminSearchedOrder !== 'undefined' && adminSearchedOrder && adminSearchedOrder.id === orderId) {
                 adminSearchedOrder.discountType = discountType;
                 adminSearchedOrder.discountAmount = 0;
-                adminSearchedOrder.total = subtotal + tax;
+                adminSearchedOrder.total = subtotal;
                 if (typeof adminDisplayOrderDetails2 === 'function') {
                     adminDisplayOrderDetails2(adminSearchedOrder);
                 }
@@ -435,7 +424,7 @@ async function adminUpdateDiscountType(orderId, discountType) {
         }
 
         // Calculate new total
-        const total = Math.max(0, subtotal + tax - discountValue);
+        const total = Math.max(0, subtotal - discountValue);
 
         // Update order
         await orderRef.update({

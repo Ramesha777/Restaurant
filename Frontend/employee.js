@@ -431,11 +431,9 @@ function renderEmployeeCart() {
     
     // Calculate totals
     const subtotal = employeeCart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-    const tax = subtotal * 0.1;
-    const total = subtotal + tax;
+    const total = subtotal;
     
     document.getElementById('employeeSubtotal').textContent = formatCurrency(subtotal);
-    document.getElementById('employeeTax').textContent = formatCurrency(tax);
     document.getElementById('employeeTotal').textContent = formatCurrency(total);
     
     cartSummary.style.display = 'block';
@@ -477,8 +475,7 @@ async function employeeCheckout() {
     
     try {
         const subtotal = employeeCart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-        const tax = subtotal * 0.1;
-        const total = subtotal + tax;
+        const total = subtotal;
         const orderNumber = generateOrderNumber();
         const notes = document.getElementById('employeeOrderNotes').value || '';
         
@@ -494,7 +491,6 @@ async function employeeCheckout() {
             })),
             notes: notes,
             subtotal,
-            tax,
             total,
             status: 'completed', // Auto-completed for employee orders
             paymentStatus: 'confirmed', // Auto-confirmed for employee orders
@@ -638,9 +634,8 @@ function displayOrderDetails(order) {
 
     // Calculate totals with discount
     const subtotal = order.subtotal || 0;
-    const tax = order.tax || 0;
     const discountValue = discountType === 'percentage' ? (subtotal * discountAmount / 100) : discountAmount;
-    const total = Math.max(0, subtotal + tax - discountValue);
+    const total = Math.max(0, subtotal - discountValue);
 
     content.innerHTML = `
         <div style="margin-bottom: 2rem;">
@@ -725,7 +720,6 @@ function displayOrderDetails(order) {
             <div style="display: flex; justify-content: space-between; padding: 1rem; background: #f5f5f5; border-radius: 8px; margin-bottom: 1.5rem;">
                 <div>
                     <p><strong>Subtotal:</strong> ${formatCurrency(subtotal)}</p>
-                    <p><strong>Tax (10%):</strong> ${formatCurrency(tax)}</p>
                     ${discountValue > 0 ? `<p><strong>Discount:</strong> -${formatCurrency(discountValue)}</p>` : ''}
                     <p style="font-size: 1.25rem; margin-top: 0.5rem;"><strong>Total:</strong> ${formatCurrency(total)}</p>
                 </div>
@@ -834,9 +828,8 @@ async function printBill(orderOrId) {
     const discountAmount = order.discountAmount || 0;
     const discountType = order.discountType || 'fixed';
     const subtotal = order.subtotal || 0;
-    const tax = order.tax || 0;
     const discountValue = discountType === 'percentage' ? (subtotal * discountAmount / 100) : discountAmount;
-    const total = Math.max(0, subtotal + tax - discountValue);
+    const total = Math.max(0, subtotal - discountValue);
 
     let itemsHtml = '';
     if (order.items && order.items.length > 0) {
@@ -911,7 +904,7 @@ async function printBill(orderOrId) {
         </head>
         <body>
             <div class="header">
-                <h1>SAVORY HAVEN</h1>
+                <h1>Ramesh DaDa Restaurant</h1>
                 <p>Restaurant Bill</p>
             </div>
 
@@ -939,7 +932,6 @@ async function printBill(orderOrId) {
 
             <div class="total">
                 <p style="text-align: right; margin: 5px 0;"><strong>Subtotal:</strong> ${formatCurrency(subtotal)}</p>
-                <p style="text-align: right; margin: 5px 0;"><strong>Tax (10%):</strong> ${formatCurrency(tax)}</p>
                 ${discountValue > 0 ? `<p style="text-align: right; margin: 5px 0;"><strong>Discount:</strong> -${formatCurrency(discountValue)}</p>` : ''}
                 <p style="text-align: right; margin: 5px 0; font-size: 16px;"><strong>TOTAL:</strong> ${formatCurrency(total)}</p>
             </div>
@@ -994,13 +986,11 @@ async function updateOrderItem(orderId, itemName, newQuantity, itemPrice) {
         
         // Recalculate totals
         const subtotal = filteredItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-        const tax = subtotal * 0.1;
-        const total = subtotal + tax;
+        const total = subtotal;
         
         await orderRef.update({
             items: filteredItems,
             subtotal,
-            tax,
             total
         });
         
@@ -1082,13 +1072,11 @@ async function addItemToOrder(orderId) {
         
         // Recalculate totals
         const subtotal = updatedItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-        const tax = subtotal * 0.1;
-        const total = subtotal + tax;
+        const total = subtotal;
         
         await orderRef.update({
             items: updatedItems,
             subtotal,
-            tax,
             total
         });
         
@@ -1180,9 +1168,8 @@ async function updateDiscount(orderId, discountAmount) {
 
         // Recalculate totals with new discount
         const subtotal = orderData.subtotal || 0;
-        const tax = orderData.tax || 0;
         const discountValue = discountType === 'percentage' ? (subtotal * amount / 100) : amount;
-        const total = Math.max(0, subtotal + tax - discountValue);
+        const total = Math.max(0, subtotal - discountValue);
 
         await orderRef.update({
             discountAmount: amount,
@@ -1218,9 +1205,8 @@ async function updateDiscountType(orderId, discountType) {
 
         // Recalculate totals with new discount type
         const subtotal = orderData.subtotal || 0;
-        const tax = orderData.tax || 0;
         const discountValue = discountType === 'percentage' ? (subtotal * discountAmount / 100) : discountAmount;
-        const total = Math.max(0, subtotal + tax - discountValue);
+        const total = Math.max(0, subtotal - discountValue);
 
         await orderRef.update({
             discountType: discountType,
@@ -1255,16 +1241,14 @@ async function removeOrderItem(orderId, itemName) {
 
         // Recalculate totals
         const subtotal = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-        const tax = subtotal * 0.1;
         const discountAmount = orderData.discountAmount || 0;
         const discountType = orderData.discountType || 'fixed';
         const discountValue = discountType === 'percentage' ? (subtotal * discountAmount / 100) : discountAmount;
-        const total = Math.max(0, subtotal + tax - discountValue);
+        const total = Math.max(0, subtotal - discountValue);
 
         await orderRef.update({
             items: items,
             subtotal,
-            tax,
             total
         });
 
@@ -1303,16 +1287,14 @@ async function increaseOrderItemQuantity(orderId, itemName, currentQuantity) {
 
         // Recalculate totals
         const subtotal = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-        const tax = subtotal * 0.1;
         const discountAmount = orderData.discountAmount || 0;
         const discountType = orderData.discountType || 'fixed';
         const discountValue = discountType === 'percentage' ? (subtotal * discountAmount / 100) : discountAmount;
-        const total = Math.max(0, subtotal + tax - discountValue);
+        const total = Math.max(0, subtotal - discountValue);
 
         await orderRef.update({
             items: items,
             subtotal,
-            tax,
             total
         });
 
@@ -1322,7 +1304,6 @@ async function increaseOrderItemQuantity(orderId, itemName, currentQuantity) {
         if (searchedOrder && searchedOrder.id === orderId) {
             searchedOrder.items = items;
             searchedOrder.subtotal = subtotal;
-            searchedOrder.tax = tax;
             searchedOrder.total = total;
             displayOrderDetails(searchedOrder);
         }
@@ -1356,16 +1337,14 @@ async function decreaseOrderItemQuantity(orderId, itemName, currentQuantity) {
 
         // Recalculate totals
         const subtotal = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-        const tax = subtotal * 0.1;
         const discountAmount = orderData.discountAmount || 0;
         const discountType = orderData.discountType || 'fixed';
         const discountValue = discountType === 'percentage' ? (subtotal * discountAmount / 100) : discountAmount;
-        const total = Math.max(0, subtotal + tax - discountValue);
+        const total = Math.max(0, subtotal - discountValue);
 
         await orderRef.update({
             items: items,
             subtotal,
-            tax,
             total
         });
 
@@ -1375,7 +1354,6 @@ async function decreaseOrderItemQuantity(orderId, itemName, currentQuantity) {
         if (searchedOrder && searchedOrder.id === orderId) {
             searchedOrder.items = items;
             searchedOrder.subtotal = subtotal;
-            searchedOrder.tax = tax;
             searchedOrder.total = total;
             displayOrderDetails(searchedOrder);
         }
