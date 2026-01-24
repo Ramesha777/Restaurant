@@ -1374,6 +1374,17 @@ function adminDisplayOrderDetails2(order) {
                     </p>
                 </div>
                 <div>
+                    <strong>Payment Method:</strong>
+                    <p style="margin-top: 0.5rem;">
+                        <select id="adminPaymentMethodSelect_${order.id}" onchange="adminUpdatePaymentMethod('${order.id}', this.value)" style="padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px;">
+                            <option value="" ${!order.paymentMethod ? 'selected' : ''}>Not Selected</option>
+                            <option value="cash" ${order.paymentMethod === 'cash' ? 'selected' : ''}>Cash</option>
+                            <option value="card" ${order.paymentMethod === 'card' ? 'selected' : ''}>Card</option>
+                            <option value="online" ${order.paymentMethod === 'online' ? 'selected' : ''}>Online</option>
+                        </select>
+                    </p>
+                </div>
+                <div>
                     <strong>Date:</strong>
                     <p style="margin-top: 0.5rem;">${orderDate}</p>
                 </div>
@@ -1846,6 +1857,19 @@ async function adminUpdatePaymentStatus(orderId, paymentStatus) {
     }
 }
 
+async function adminUpdatePaymentMethod(orderId, paymentMethod) {
+    try {
+        await firebase.firestore().collection('orders').doc(orderId).update({
+            paymentMethod: paymentMethod || null,
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        showNotification('Payment method updated successfully', 'success');
+    } catch (error) {
+        console.error('Error updating payment method:', error);
+        showNotification('Error updating payment method', 'error');
+    }
+}
+
 async function adminRecordPayment(orderId, paymentMethod) {
     try {
         const updateData = {
@@ -1902,4 +1926,117 @@ function selectAdminSpicyLevel(level) {
 function closeAdminSpicyLevelModal() {
     document.getElementById('adminSpicyLevelModal').classList.remove('active');
     pendingAdminSpicyItem = null;
+}
+
+// CSV Export Function
+async function exportOrdersToCSV() {
+    const fromDate = document.getElementById('exportFromDate').value;
+    const toDate = document.getElementById('exportToDate').value;
+
+    if (!fromDate || !toDate) {
+        showNotification('Please select both from and to dates', 'error');
+        return;
+    }
+
+    const fromTimestamp = new Date(fromDate + 'T00:00:00');
+    const toTimestamp = new Date(toDate + 'T23:59:59');
+
+    if (fromTimestamp > toTimestamp) {
+        showNotification('From date cannot be after to date', 'error');
+        return;
+    }
+
+    try {
+        showNotification('Exporting orders... Please wait.', 'info');
+
+        // Query orders within date range
+        const ordersSnapshot = await firebase.firestore()
+            .collection('orders')
+            .where('createdAt', '>=', fromTimestamp)
+            .where('createdAt', '<=', toTimestamp)
+            .orderBy('createdAt', 'desc')
+            .get();
+
+        if (ordersSnapshot.empty) {
+            showNotification('No orders found in the selected date range', 'warning');
+            return;
+        }
+
+        const orders = ordersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+        // Prepare CSV data
+        const csvHeaders = [
+            'Order Number',
+            'Date',
+            'Time',
+            'Customer Name',
+            'Table Number',
+            'Items',
+            'Subtotal',
+            'Tax',
+            'Discount',
+            'Total',
+            'Status',
+            'Payment Status',
+            'Payment Method',
+            'Confirmed By',
+        ];
+
+        const csvRows = orders.map(order => {
+            const orderDate = order.createdAt ? order.createdAt.toDate() : new Date();
+            const dateStr = orderDate.toLocaleDateString();
+            const timeStr = orderDate.toLocaleTimeString();
+
+            // Format items
+            const itemsList = order.items ? order.items.map(item => item.name).join('; ') : '';
+            const itemDetails = order.items ? order.items.map(item =>
+                `${item.name} (${item.quantity}x ${formatCurrency(item.price)} = ${formatCurrency(item.price * item.quantity)})`
+            ).join('; ') : '';
+
+            return [
+                order.orderNumber || order.id.substring(0, 8),
+                dateStr,
+                timeStr,
+                order.customerName || 'Guest',
+                order.tableNumber || 'N/A',
+                itemsList,
+                formatCurrency(order.subtotal || 0),
+                formatCurrency(order.tax || 0),
+                formatCurrency((order.discountType === 'percentage' ?
+                    (order.subtotal || 0) * (order.discountAmount || 0) / 100 :
+                    (order.discountAmount || 0))),
+                formatCurrency(order.total || 0),
+                order.status || 'pending',
+                order.paymentStatus || 'pending',
+                order.paymentMethod || 'N/A',
+                order.confirmedBy || 'N/A',
+            ];
+        });
+
+        // Create CSV content
+        const csvContent = [
+            csvHeaders.join(','),
+            ...csvRows.map(row => row.map(field => `"${field}"`).join(','))
+        ].join('\n');
+
+        // Create and download file
+        const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+
+        if (link.download !== undefined) {
+            const url = URL.createObjectURL(blob);
+            link.setAttribute('href', url);
+            link.setAttribute('download', `orders_${fromDate}_to_${toDate}.csv`);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        showNotification(`Successfully exported ${orders.length} orders to CSV`, 'success');
+
+    } catch (error) {
+        console.error('Error exporting orders:', error);
+        showNotification('Error exporting orders. Please try again.', 'error');
+    }
 }

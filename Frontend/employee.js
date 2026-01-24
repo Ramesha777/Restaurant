@@ -203,7 +203,7 @@ async function updatePaymentStatus(orderId, paymentStatus) {
 
         await firebase.firestore().collection('orders').doc(orderId).update(updateData);
         showNotification('Payment status updated successfully', 'success');
-        
+
         // Reload orders to show updated status
         setTimeout(() => {
             loadOrders();
@@ -211,6 +211,19 @@ async function updatePaymentStatus(orderId, paymentStatus) {
     } catch (error) {
         console.error('Error updating payment status:', error);
         showNotification('Error updating payment status', 'error');
+    }
+}
+
+async function updatePaymentMethod(orderId, paymentMethod) {
+    try {
+        await firebase.firestore().collection('orders').doc(orderId).update({
+            paymentMethod: paymentMethod || null,
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        showNotification('Payment method updated successfully', 'success');
+    } catch (error) {
+        console.error('Error updating payment method:', error);
+        showNotification('Error updating payment method', 'error');
     }
 }
 
@@ -770,6 +783,17 @@ function displayOrderDetails(order) {
                         <span class="status-badge ${paymentStatus === 'confirmed' ? 'status-completed' : 'status-pending'}">
                             ${paymentStatus === 'confirmed' ? 'Confirmed' : 'Pending'}
                         </span>
+                    </p>
+                </div>
+                <div>
+                    <strong>Payment Method:</strong>
+                    <p style="margin-top: 0.5rem;">
+                        <select id="paymentMethodSelect_${order.id}" onchange="updatePaymentMethod('${order.id}', this.value)" style="padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px;">
+                            <option value="" ${!order.paymentMethod ? 'selected' : ''}>Not Selected</option>
+                            <option value="cash" ${order.paymentMethod === 'cash' ? 'selected' : ''}>Cash</option>
+                            <option value="card" ${order.paymentMethod === 'card' ? 'selected' : ''}>Card</option>
+                            <option value="online" ${order.paymentMethod === 'online' ? 'selected' : ''}>Online</option>
+                        </select>
                     </p>
                 </div>
                 <div>

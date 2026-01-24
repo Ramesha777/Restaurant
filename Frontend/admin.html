@@ -202,6 +202,21 @@
                                    onkeyup="adminHandleOrderSearch2(event)">
                             <button class="btn btn-secondary" onclick="adminSearchOrder2()" style="margin-top: 0.5rem; width: 100%;">Search Order</button>
                         </div>
+                        <div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
+                            <div style="display: flex; flex-direction: column;">
+                                <label for="exportFromDate" style="font-size: 0.85rem; color: #666; margin-bottom: 0.25rem;">From Date:</label>
+                                <input type="date" id="exportFromDate" style="padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px;">
+                            </div>
+                            <div style="display: flex; flex-direction: column;">
+                                <label for="exportToDate" style="font-size: 0.85rem; color: #666; margin-bottom: 0.25rem;">To Date:</label>
+                                <input type="date" id="exportToDate" style="padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px;">
+                            </div>
+                            <div style="display: flex; align-items: flex-end;">
+                                <button class="btn btn-success" onclick="exportOrdersToCSV()" style="padding: 0.5rem 1rem;">
+                                    📊 Export CSV
+                                </button>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Order Search Results -->
