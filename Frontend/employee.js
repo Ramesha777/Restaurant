@@ -316,7 +316,84 @@ function renderEmployeeMenu() {
         return;
     }
 
-    menuGrid.innerHTML = filteredItems.map(item => {
+    // Group by food type when no specific food type filter is active
+    if (!employeeCurrentFoodType) {
+        renderEmployeeMenuGroupedByFoodType(filteredItems);
+    } else {
+        renderEmployeeMenuGrid(filteredItems);
+    }
+}
+
+function renderEmployeeMenuGroupedByFoodType(items) {
+    const menuGrid = document.getElementById('employeeMenuGrid');
+    
+    // Group items by food type
+    const groupedItems = {};
+    items.forEach(item => {
+        const foodType = item.foodType || 'other';
+        if (!groupedItems[foodType]) {
+            groupedItems[foodType] = [];
+        }
+        groupedItems[foodType].push(item);
+    });
+
+    // Sort food types alphabetically
+    const sortedFoodTypes = Object.keys(groupedItems).sort();
+
+    let html = '';
+    
+    sortedFoodTypes.forEach(foodType => {
+        const foodTypeItems = groupedItems[foodType];
+        
+        // Add food type heading
+        html += `
+            <div style="grid-column: 1/-1; margin-top: 2rem; margin-bottom: 1rem;">
+                <h3 style="font-weight: bold; font-size: 1.5rem; text-transform: uppercase; color: #333; border-bottom: 3px solid #ff6f00; padding-bottom: 0.5rem;">
+                    ${foodType === 'other' ? 'Other Items' : foodType}
+                </h3>
+            </div>
+        `;
+        
+        // Add items for this food type
+        foodTypeItems.forEach(item => {
+            const cartItem = employeeCart.find(ci => ci.menuItemId === item.id);
+            const quantity = cartItem ? cartItem.quantity : 0;
+            const isUnavailable = item.available === false;
+
+            html += `
+                <div class="menu-item ${isUnavailable ? 'unavailable' : ''}">
+                    ${item.image ? `<img src="${item.image}" alt="${item.name}" class="menu-item-image">` : 
+                      `<div class="menu-item-image" style="display: flex; align-items: center; justify-content: center; color: white; font-size: 3rem;">🍽️</div>`}
+                    <div class="menu-item-content">
+                        <div class="menu-item-header">
+                            <h3>${item.name}</h3>
+                            <span class="menu-item-price">${formatCurrency(item.price || 0)}</span>
+                        </div>
+                        <p class="menu-item-description">${item.description || 'Delicious item from our kitchen'}</p>
+                        <div class="menu-item-footer">
+                            <span style="font-size: 0.85rem; color: #666; text-transform: capitalize;">${item.category || 'main'}</span>
+                        ${isUnavailable ?
+                            '<span style="color: #f44336; font-weight: 600;">Unavailable</span>' :
+                            `<div class="quantity-controls">
+                                <button class="quantity-btn" onclick="decreaseEmployeeQuantity('${item.id}')" ${quantity === 0 ? 'disabled' : ''}>-</button>
+                                <span class="quantity-display">${quantity}</span>
+                                <button class="quantity-btn" onclick="increaseEmployeeQuantity('${item.id}')">+</button>
+                            </div>`
+                        }
+                    </div>
+                    </div>
+                </div>
+            `;
+        });
+    });
+
+    menuGrid.innerHTML = html;
+}
+
+function renderEmployeeMenuGrid(items) {
+    const menuGrid = document.getElementById('employeeMenuGrid');
+    
+    menuGrid.innerHTML = items.map(item => {
         const cartItem = employeeCart.find(ci => ci.menuItemId === item.id);
         const quantity = cartItem ? cartItem.quantity : 0;
         const isUnavailable = item.available === false;

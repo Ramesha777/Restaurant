@@ -7,6 +7,26 @@
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="customer/customer.css">
     <link rel="stylesheet" href="admin.css">
+    <style>
+        /* Custom overrides for 5-column layout and smaller cards */
+        @media (min-width: 1200px) {
+            .menu-grid {
+                grid-template-columns: repeat(5, 1fr) !important;
+            }
+        }
+        
+        .menu-item-image {
+            height: 120px !important; /* Decrease image size */
+        }
+
+        .menu-item-content {
+            padding: 0.8rem !important; /* Compact padding */
+        }
+
+        .menu-item h3 {
+            font-size: 1rem !important; /* Smaller title */
+        }
+    </style>
 </head>
 <body>
     <div class="dashboard">
@@ -210,17 +230,10 @@
                         <div style="margin-bottom: 1rem;">
                             <h4 style="margin-bottom: 0.5rem; color: #333;">Categories</h4>
                             <button class="filter-btn active" data-category="" onclick="filterAdminMenu('')">All Categories</button>
-                            <button class="filter-btn" data-category="appetizer" onclick="filterAdminMenu('appetizer')">Appetizers</button>
+                            <button class="filter-btn" data-category="starter" onclick="filterAdminMenu('starter')">Starters</button>
                             <button class="filter-btn" data-category="main" onclick="filterAdminMenu('main')">Main Course</button>
                             <button class="filter-btn" data-category="dessert" onclick="filterAdminMenu('dessert')">Desserts</button>
                             <button class="filter-btn" data-category="beverage" onclick="filterAdminMenu('beverage')">Beverages</button>
-                        </div>
-                        <div>
-                            <h4 style="margin-bottom: 0.5rem; color: #333;">Food Types</h4>
-                            <button class="filter-btn" data-food-type="" onclick="filterAdminByFoodType('')">All Types</button>
-                            <button class="filter-btn" data-food-type="momo" onclick="filterAdminByFoodType('momo')">Momo</button>
-                            <button class="filter-btn" data-food-type="curry" onclick="filterAdminByFoodType('curry')">Curry</button>
-                            <button class="filter-btn" data-food-type="noodle" onclick="filterAdminByFoodType('noodle')">Noodle</button>
                         </div>
                     </div>
                     <div class="menu-grid" id="adminMenuGrid">
@@ -294,16 +307,12 @@
                     <button type="button" class="btn btn-small" onclick="addNewCategory()" style="margin-top: 0.5rem;">+ Add Category</button>
                 </div>
                 <div class="form-group">
-                    <label>Subcategory</label>
-                    <select id="itemSubcategory" required>
-                        <option value="veg">Veg</option>
-                        <option value="non-veg">Non-veg</option>
-                        <option value="vegan">Vegan</option>
-                    </select>
-                </div>
-                <div class="form-group">
                     <label>Food Type</label>
-                    <input type="text" id="itemFoodType" placeholder="e.g., Momo, Naan, Curry" required>
+                    <select id="itemFoodType" required>
+                        <option value="">Select Food Type</option>
+                        <!-- Food types will be loaded dynamically -->
+                    </select>
+                    <button type="button" class="btn btn-small" onclick="addNewFoodType()" style="margin-top: 0.5rem;">+ Add Food Type</button>
                 </div>
                 <div class="form-group">
                     <label>Price (£)</label>
@@ -312,8 +321,8 @@
                 <div class="form-group">
                     <label>Spicy Level</label>
                     <select id="itemSpicyLevel">
-                        <option value="false">Not Needed</option>
-                        <option value="true">Ask</option>
+                        <option value="not needed">Not Needed</option>
+                        <option value="ask">Ask</option>
                     </select>
                 </div>
                 <div class="form-group">

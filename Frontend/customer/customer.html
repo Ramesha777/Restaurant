@@ -6,6 +6,26 @@
     <title>Customer Menu - Ramesh DaDa Restaurant</title>
     <link rel="stylesheet" href="../style.css">
     <link rel="stylesheet" href="customer.css">
+    <style>
+        /* Custom overrides for 5-column layout and smaller cards */
+        @media (min-width: 1200px) {
+            .menu-grid {
+                grid-template-columns: repeat(5, 1fr) !important;
+            }
+        }
+        
+        .menu-item-image {
+            height: 120px !important; /* Decrease image size */
+        }
+
+        .menu-item-content {
+            padding: 0.8rem !important; /* Compact padding */
+        }
+
+        .menu-item h3 {
+            font-size: 1rem !important; /* Smaller title */
+        }
+    </style>
 </head>
 <body>
     <div class="header">
@@ -24,7 +44,7 @@
                 <h1>Our Menu</h1>
                 <div class="category-filters">
                     <button class="filter-btn active" data-category="" onclick="filterMenu('')">All</button>
-                    <button class="filter-btn" data-category="appetizer" onclick="filterMenu('appetizer')">Appetizers</button>
+                    <button class="filter-btn" data-category="starter" onclick="filterMenu('starter')">Starters</button>
                     <button class="filter-btn" data-category="main" onclick="filterMenu('main')">Main Course</button>
                     <button class="filter-btn" data-category="dessert" onclick="filterMenu('dessert')">Desserts</button>
                     <button class="filter-btn" data-category="beverage" onclick="filterMenu('beverage')">Beverages</button>
@@ -98,14 +118,17 @@
             <div style="padding: 1.5rem;">
                 <p style="margin-bottom: 1rem; color: #666;">How spicy would you like your <strong id="spicyItemName"></strong>?</p>
                 <div style="display: flex; flex-direction: column; gap: 0.75rem;">
-                    <button class="btn btn-secondary" onclick="selectSpicyLevel('low')" style="text-align: left; padding: 1rem;">
-                        🌶️ Low - Mild heat
+                    <button class="btn btn-secondary" onclick="selectSpicyLevel('normal')" style="text-align: left; padding: 1rem; color:purple;">
+                        🌶️ Normal - Mild heat
                     </button>
-                    <button class="btn btn-secondary" onclick="selectSpicyLevel('medium')" style="text-align: left; padding: 1rem;">
+                    <button class="btn btn-secondary" onclick="selectSpicyLevel('medium')" style="text-align: left; padding: 1rem; color:orange;">
                         🌶️🌶️ Medium - Moderate heat
                     </button>
-                    <button class="btn btn-secondary" onclick="selectSpicyLevel('extra')" style="text-align: left; padding: 1rem;">
+                    <button class="btn btn-secondary" onclick="selectSpicyLevel('extra')" style="text-align: left; padding: 1rem; color:red;">
                         🌶️🌶️🌶️ Extra Spicy - Very hot
+                    </button>
+                    <button class="btn btn-secondary" onclick="selectSpicyLevel('no spicy')" style="text-align: left; padding: 1rem; color: green;">
+                        No Spicy - No spice
                     </button>
                 </div>
             </div>

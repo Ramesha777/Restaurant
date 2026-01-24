@@ -7,6 +7,26 @@
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="employee.css">
     <link rel="stylesheet" href="customer/customer.css">
+    <style>
+        /* Custom overrides for 5-column layout and smaller cards */
+        @media (min-width: 1200px) {
+            .menu-grid {
+                grid-template-columns: repeat(5, 1fr) !important;
+            }
+        }
+        
+        .menu-item-image {
+            height: 120px !important; /* Decrease image size */
+        }
+
+        .menu-item-content {
+            padding: 0.8rem !important; /* Compact padding */
+        }
+
+        .menu-item h3 {
+            font-size: 1rem !important; /* Smaller title */
+        }
+    </style>
 </head>
 <body>
     <div class="container">
@@ -74,7 +94,7 @@
             <div id="employeeMenuView">
                 <div class="order-filters" style="margin-bottom: 2rem;">
                     <button class="filter-btn active" data-category="" onclick="filterEmployeeMenu('')">All</button>
-                    <button class="filter-btn" data-category="appetizer" onclick="filterEmployeeMenu('appetizer')">Appetizers</button>
+                    <button class="filter-btn" data-category="starter" onclick="filterEmployeeMenu('starter')">Starters</button>
                     <button class="filter-btn" data-category="main" onclick="filterEmployeeMenu('main')">Main Course</button>
                     <button class="filter-btn" data-category="dessert" onclick="filterEmployeeMenu('dessert')">Desserts</button>
                     <button class="filter-btn" data-category="beverage" onclick="filterEmployeeMenu('beverage')">Beverages</button>

@@ -31,7 +31,8 @@ if (typeof firebase !== 'undefined' && firebase.auth) {
 }
 
 let currentEditingItemId = null;
-let availableCategories = ['appetizer', 'main', 'dessert', 'beverage'];
+let availableCategories = ['starter', 'main', 'dessert', 'beverage'];
+let availableFoodTypes = ['momo', 'naan', 'curry', 'rice', 'noodle'];
 let adminCurrentFilter = '';
 let adminOrdersUnsubscribe = null;
 let adminSearchedOrder = null;
@@ -66,6 +67,7 @@ async function initializeDashboard() {
 
     // Load initial data
     loadCategories();
+    loadFoodTypes();
     loadOverview();
     loadUsers();
 }
@@ -110,7 +112,7 @@ async function loadCategories() {
 
         // Add default categories if none exist
         if (availableCategories.length === 0) {
-            availableCategories = ['appetizer', 'main', 'dessert', 'beverage'];
+            availableCategories = ['starter', 'main', 'dessert', 'beverage'];
             // Save default categories
             const batch = firebase.firestore().batch();
             availableCategories.forEach(cat => {
@@ -123,8 +125,35 @@ async function loadCategories() {
         updateCategorySelect();
     } catch (error) {
         console.error('Error loading categories:', error);
-        availableCategories = ['appetizer', 'main', 'dessert', 'beverage'];
+        availableCategories = ['starter', 'main', 'dessert', 'beverage'];
         updateCategorySelect();
+    }
+}
+
+async function loadFoodTypes() {
+    try {
+        const snapshot = await firebase.firestore().collection('foodTypes').orderBy('name').get();
+        availableFoodTypes = snapshot.docs.map(doc => doc.data().name);
+
+        // Add default food types if none exist
+        if (availableFoodTypes.length === 0) {
+            availableFoodTypes = ['momo', 'naan', 'curry', 'rice', 'noodle'];
+            // Save default food types
+            const batch = firebase.firestore().batch();
+            availableFoodTypes.forEach(type => {
+                const ref = firebase.firestore().collection('foodTypes').doc();
+                batch.set(ref, { name: type });
+            });
+            await batch.commit();
+        }
+
+        updateFoodTypeSelect();
+        updateAdminFoodTypeFilters();
+    } catch (error) {
+        console.error('Error loading food types:', error);
+        availableFoodTypes = ['momo', 'naan', 'curry', 'rice', 'noodle'];
+        updateFoodTypeSelect();
+        updateAdminFoodTypeFilters();
     }
 }
 
@@ -132,6 +161,20 @@ function updateCategorySelect() {
     const select = document.getElementById('itemCategory');
     select.innerHTML = '<option value="">Select Category</option>' +
         availableCategories.map(cat => `<option value="${cat}">${cat.charAt(0).toUpperCase() + cat.slice(1)}</option>`).join('');
+}
+
+function updateFoodTypeSelect() {
+    const select = document.getElementById('itemFoodType');
+    if (!select) return;
+    select.innerHTML = '<option value="">Select Food Type</option>' +
+        availableFoodTypes.map(type => `<option value="${type}">${type.charAt(0).toUpperCase() + type.slice(1)}</option>`).join('');
+}
+
+function updateAdminFoodTypeFilters() {
+    const container = document.getElementById('adminFoodTypeFilters');
+    if (container) {
+        container.innerHTML = '';
+    }
 }
 
 function addNewCategory() {
@@ -159,16 +202,30 @@ function addNewCategory() {
     showNotification('Category added successfully', 'success');
 }
 
-function updateSubcategoryOptions() {
-    const category = document.getElementById('itemCategory').value;
-    const subcategorySelect = document.getElementById('itemSubcategory');
+function addNewFoodType() {
+    const foodTypeName = prompt('Enter new food type name (e.g., Naan, Curry, Rice):');
+    if (!foodTypeName || !foodTypeName.trim()) return;
 
-    // Keep the same options for now, but could be customized per category later
-    subcategorySelect.innerHTML = `
-        <option value="veg">Veg</option>
-        <option value="non-veg">Non-veg</option>
-        <option value="vegan">Vegan</option>
-    `;
+    const normalizedName = foodTypeName.toLowerCase().trim();
+    if (availableFoodTypes.includes(normalizedName)) {
+        showNotification('Food type already exists', 'error');
+        return;
+    }
+
+    availableFoodTypes.push(normalizedName);
+    updateFoodTypeSelect();
+    updateAdminFoodTypeFilters();
+
+    // Save to Firestore
+    firebase.firestore().collection('foodTypes').add({
+        name: normalizedName,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    }).catch(error => {
+        console.error('Error saving food type:', error);
+        showNotification('Error saving food type', 'error');
+    });
+
+    showNotification('Food type added successfully', 'success');
 }
 
 async function loadMenuItems() {
@@ -187,8 +244,8 @@ async function loadMenuItems() {
                 <p style="color: #666; font-size: 0.9rem; margin: 0.5rem 0;">${item.description || ''}</p>
                 <div class="price">£${(item.price || 0).toFixed(2)}</div>
                 <div style="font-size: 0.85rem; color: #666;">
-                    Category: ${item.category} | Sub: ${item.subcategory} | Type: ${item.foodType || 'N/A'}
-                    ${item.spicyLevel === 'true' ? '| 🌶️ Spicy' : ''}
+                    Category: ${item.category} | Type: ${item.foodType || 'N/A'}
+                    ${item.spicyLevel === 'ask' ? '| 🌶️ Ask for Spicy Level' : ''}
                     ${item.available !== false ? '✅ Available' : '❌ Unavailable'}
                 </div>
                 <div class="menu-item-actions">
@@ -359,10 +416,11 @@ async function editMenuItem(id) {
         document.getElementById('itemName').value = item.name || '';
         document.getElementById('itemDescription').value = item.description || '';
         document.getElementById('itemCategory').value = item.category || 'main';
+        document.getElementById('itemFoodType').value = item.foodType || '';
         document.getElementById('itemPrice').value = item.price || '';
         document.getElementById('itemImage').value = item.image || '';
         document.getElementById('itemAvailable').value = item.available !== false ? 'true' : 'false';
-        document.getElementById('itemSpicyLevel').value = item.spicyLevel || 'no';
+        document.getElementById('itemSpicyLevel').value = item.spicyLevel || 'not needed';
 
         document.getElementById('menuItemModal').classList.add('active');
     } catch (error) {
@@ -389,7 +447,6 @@ document.getElementById('menuItemForm').addEventListener('submit', async (e) => 
         name: document.getElementById('itemName').value,
         description: document.getElementById('itemDescription').value,
         category: document.getElementById('itemCategory').value,
-        subcategory: document.getElementById('itemSubcategory').value,
         foodType: document.getElementById('itemFoodType').value,
         price: parseFloat(document.getElementById('itemPrice').value),
         spicyLevel: document.getElementById('itemSpicyLevel').value,
@@ -781,14 +838,6 @@ function filterAdminMenu(category) {
     renderAdminMenu();
 }
 
-function filterAdminByFoodType(foodType) {
-    adminCurrentFoodType = foodType;
-    document.querySelectorAll('#adminMenuView .filter-btn[data-food-type]').forEach(btn => {
-        btn.classList.remove('active');
-    });
-    document.querySelector(`#adminMenuView [data-food-type="${foodType}"]`).classList.add('active');
-    renderAdminMenu();
-}
 
 function filterAdminBySubcategory(category, subcategory) {
     adminCurrentCategory = category;
@@ -827,19 +876,100 @@ function renderAdminMenu() {
         return;
     }
 
-    menuGrid.innerHTML = filteredItems.map(item => {
+    // Group by food type when no specific food type filter is active
+    if (!adminCurrentFoodType) {
+        renderAdminMenuGroupedByFoodType(filteredItems);
+    } else {
+        renderAdminMenuGrid(filteredItems);
+    }
+}
+
+function renderAdminMenuGroupedByFoodType(items) {
+    const menuGrid = document.getElementById('adminMenuGrid');
+    
+    // Group items by food type
+    const groupedItems = {};
+    items.forEach(item => {
+        const foodType = item.foodType || 'other';
+        if (!groupedItems[foodType]) {
+            groupedItems[foodType] = [];
+        }
+        groupedItems[foodType].push(item);
+    });
+
+    // Sort food types alphabetically
+    const sortedFoodTypes = Object.keys(groupedItems).sort();
+
+    let html = '';
+    
+    sortedFoodTypes.forEach(foodType => {
+        const foodTypeItems = groupedItems[foodType];
+        
+        // Add food type heading
+        html += `
+            <div style="grid-column: 1/-1; margin-top: 2rem; margin-bottom: 1rem;">
+                <h3 style="font-weight: bold; font-size: 1.5rem; text-transform: uppercase; color: #333; border-bottom: 3px solid #ff6f00; padding-bottom: 0.5rem;">
+                    ${foodType === 'other' ? 'Other Items' : foodType}
+                </h3>
+            </div>
+        `;
+        
+        // Add items for this food type
+        foodTypeItems.forEach(item => {
+            const cartItem = adminCart.find(ci => ci.menuItemId === item.id);
+            const quantity = cartItem ? cartItem.quantity : 0;
+            const isUnavailable = item.available === false;
+
+            html += `
+                <div class="menu-item ${isUnavailable ? 'unavailable' : ''}">
+                    ${item.image ? `<img src="${item.image}" alt="${item.name}" class="menu-item-image">` : 
+                      `<div class="menu-item-image" style="display: flex; align-items: center; justify-content: center; color: white; font-size: 3rem;">🍽️</div>`}
+                    <div class="menu-item-content">
+                        <div class="menu-item-header">
+                            <h3>${item.name}</h3>
+                            <span class="menu-item-price">${formatCurrency(item.price || 0)}</span>
+                        </div>
+                        <p class="menu-item-description">${item.description || 'Delicious item from our kitchen'}</p>
+                        <div class="menu-item-footer">
+                            <span style="font-size: 0.85rem; color: #666; text-transform: capitalize;">${item.category || 'main'}</span>
+                        ${isUnavailable ?
+                            '<span style="color: #f44336; font-weight: 600;">Unavailable</span>' :
+                            `<div class="quantity-controls">
+                                <button class="quantity-btn" onclick="decreaseAdminQuantity('${item.id}')" ${quantity === 0 ? 'disabled' : ''}>-</button>
+                                <span class="quantity-display">${quantity}</span>
+                                <button class="quantity-btn" onclick="increaseAdminQuantity('${item.id}')">+</button>
+                            </div>`
+                        }
+                    </div>
+                    </div>
+                </div>
+            `;
+        });
+    });
+
+    menuGrid.innerHTML = html;
+}
+
+function renderAdminMenuGrid(items) {
+    const menuGrid = document.getElementById('adminMenuGrid');
+    
+    menuGrid.innerHTML = items.map(item => {
         const cartItem = adminCart.find(ci => ci.menuItemId === item.id);
         const quantity = cartItem ? cartItem.quantity : 0;
         const isUnavailable = item.available === false;
 
         return `
-            <div class="menu-item-card ${isUnavailable ? 'unavailable' : ''}">
-                ${item.image ? `<img src="${item.image}" alt="${item.name}">` : `<div style="display: flex; align-items: center; justify-content: center; color: white; font-size: 3rem; height: 140px; background: #f0f0f0;">🍽️</div>`}
-                <h3>${item.name}</h3>
-                <p style="color: #666; font-size: 0.9rem; margin: 0.5rem 1rem;">${item.description || 'Delicious item from our kitchen'}</p>
-                <div class="price">${formatCurrency(item.price || 0)}</div>
-                <div style="font-size: 0.85rem; color: #666; margin: 0 1rem 0.75rem 1rem; text-transform: capitalize;">${item.category || 'main'} ${item.foodType ? `• ${item.foodType}` : ''}</div>
-                <div style="padding: 0.75rem 1rem 1rem 1rem; border-top: 1px solid #f0f0f0;">
+            <div class="menu-item ${isUnavailable ? 'unavailable' : ''}">
+                ${item.image ? `<img src="${item.image}" alt="${item.name}" class="menu-item-image">` : 
+                  `<div class="menu-item-image" style="display: flex; align-items: center; justify-content: center; color: white; font-size: 3rem;">🍽️</div>`}
+                <div class="menu-item-content">
+                    <div class="menu-item-header">
+                        <h3>${item.name}</h3>
+                        <span class="menu-item-price">${formatCurrency(item.price || 0)}</span>
+                    </div>
+                    <p class="menu-item-description">${item.description || 'Delicious item from our kitchen'}</p>
+                    <div class="menu-item-footer">
+                        <span style="font-size: 0.85rem; color: #666; text-transform: capitalize;">${item.category || 'main'} ${item.foodType ? `• ${item.foodType}` : ''}</span>
                     ${isUnavailable ?
                         '<span style="color: #f44336; font-weight: 600;">Unavailable</span>' :
                         `<div class="quantity-controls">
@@ -848,6 +978,7 @@ function renderAdminMenu() {
                             <button class="quantity-btn" onclick="increaseAdminQuantity('${item.id}')">+</button>
                         </div>`
                     }
+                </div>
                 </div>
             </div>
         `;

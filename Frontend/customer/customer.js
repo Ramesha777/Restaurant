@@ -69,13 +69,13 @@ async function loadCategories() {
 
         // Add default categories if none exist
         if (availableCategories.length === 0) {
-            availableCategories = ['appetizer', 'main', 'dessert', 'beverage'];
+            availableCategories = ['starter', 'main', 'dessert', 'beverage'];
         }
 
         renderFilters();
     } catch (error) {
         console.error('Error loading categories:', error);
-        availableCategories = ['appetizer', 'main', 'dessert', 'beverage'];
+        availableCategories = ['starter', 'main', 'dessert', 'beverage'];
         renderFilters();
     }
 }
@@ -108,17 +108,6 @@ function renderFilters() {
         }
     });
     filterHtml += '</div>';
-
-    // Food type filters
-    if (availableFoodTypes.length > 0) {
-        filterHtml += '<div class="filter-group">';
-        filterHtml += '<h4>Food Types</h4>';
-        filterHtml += `<button class="filter-btn" data-food-type="" onclick="filterByFoodType('')">All Types</button>`;
-        availableFoodTypes.forEach(foodType => {
-            filterHtml += `<button class="filter-btn" data-food-type="${foodType}" onclick="filterByFoodType('${foodType}')">${foodType.charAt(0).toUpperCase() + foodType.slice(1)}</button>`;
-        });
-        filterHtml += '</div>';
-    }
 
     filterContainer.innerHTML = filterHtml;
 }
@@ -215,7 +204,84 @@ function renderMenu() {
         return;
     }
 
-    menuGrid.innerHTML = filteredItems.map(item => {
+    // Group by food type when no specific food type filter is active
+    if (!currentFoodType) {
+        renderMenuGroupedByFoodType(filteredItems);
+    } else {
+        renderMenuGrid(filteredItems);
+    }
+}
+
+function renderMenuGroupedByFoodType(items) {
+    const menuGrid = document.getElementById('menuGrid');
+    
+    // Group items by food type
+    const groupedItems = {};
+    items.forEach(item => {
+        const foodType = item.foodType || 'other';
+        if (!groupedItems[foodType]) {
+            groupedItems[foodType] = [];
+        }
+        groupedItems[foodType].push(item);
+    });
+
+    // Sort food types alphabetically
+    const sortedFoodTypes = Object.keys(groupedItems).sort();
+
+    let html = '';
+    
+    sortedFoodTypes.forEach(foodType => {
+        const foodTypeItems = groupedItems[foodType];
+        
+        // Add food type heading
+        html += `
+            <div style="grid-column: 1/-1; margin-top: 2rem; margin-bottom: 1rem;">
+                <h3 style="font-weight: bold; font-size: 1.5rem; text-transform: uppercase; color: #333; border-bottom: 3px solid #ff6f00; padding-bottom: 0.5rem;">
+                    ${foodType === 'other' ? 'Other Items' : foodType}
+                </h3>
+            </div>
+        `;
+        
+        // Add items for this food type
+        foodTypeItems.forEach(item => {
+            const cartItem = cart.find(ci => ci.menuItemId === item.id);
+            const quantity = cartItem ? cartItem.quantity : 0;
+            const isUnavailable = item.available === false;
+
+            html += `
+                <div class="menu-item ${isUnavailable ? 'unavailable' : ''}">
+                    ${item.image ? `<img src="${item.image}" alt="${item.name}" class="menu-item-image">` : 
+                      `<div class="menu-item-image" style="display: flex; align-items: center; justify-content: center; color: white; font-size: 3rem;">🍽️</div>`}
+                    <div class="menu-item-content">
+                        <div class="menu-item-header">
+                            <h3>${item.name}</h3>
+                            <span class="menu-item-price">${formatCurrency(item.price || 0)}</span>
+                        </div>
+                        <p class="menu-item-description">${item.description || 'Delicious item from our kitchen'}</p>
+                        <div class="menu-item-footer">
+                            <span style="font-size: 0.85rem; color: #666; text-transform: capitalize;">${item.category || 'main'}</span>
+                            ${isUnavailable ? 
+                                '<span style="color: #f44336; font-weight: 600;">Unavailable</span>' :
+                                `<div class="quantity-controls">
+                                    <button class="quantity-btn" onclick="decreaseQuantity('${item.id}')" ${quantity === 0 ? 'disabled' : ''}>-</button>
+                                    <span class="quantity-display">${quantity}</span>
+                                    <button class="quantity-btn" onclick="increaseQuantity('${item.id}')">+</button>
+                                </div>`
+                            }
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+    });
+
+    menuGrid.innerHTML = html;
+}
+
+function renderMenuGrid(items) {
+    const menuGrid = document.getElementById('menuGrid');
+    
+    menuGrid.innerHTML = items.map(item => {
         const cartItem = cart.find(ci => ci.menuItemId === item.id);
         const quantity = cartItem ? cartItem.quantity : 0;
         const isUnavailable = item.available === false;
@@ -314,7 +380,7 @@ function renderCart() {
             <div class="cart-item-info">
                 <h4>${item.name}</h4>
                 <p>${formatCurrency(item.price)} each</p>
-                ${item.spicyLevel ? `<p style="font-size: 0.85rem; color: #ff6f00; margin: 0.25rem 0;">🌶️ ${item.spicyLevel === 'low' ? 'Low' : item.spicyLevel === 'medium' ? 'Medium' : 'Extra Spicy'}</p>` : ''}
+                ${item.spicyLevel ? `<p style="font-size: 0.85rem; color: #ff6f00; margin: 0.25rem 0;">🌶️ ${item.spicyLevel === 'normal' ? 'Normal' : item.spicyLevel === 'medium' ? 'Medium' : item.spicyLevel === 'extra' ? 'Extra Spicy' : item.spicyLevel === 'no spicy' ? 'No Spicy' : ''}</p>` : ''}
             </div>
             <div class="cart-item-actions">
                 <div class="quantity-controls">
@@ -386,7 +452,7 @@ async function checkout() {
         // Add spicy level information to notes
         const spicyItems = cart.filter(item => item.spicyLevel);
         if (spicyItems.length > 0) {
-            const spicyNotes = spicyItems.map(item => `${item.name}: ${item.spicyLevel === 'low' ? 'Low' : item.spicyLevel === 'medium' ? 'Medium' : 'Extra Spicy'}`).join(', ');
+            const spicyNotes = spicyItems.map(item => `${item.name}: ${item.spicyLevel === 'normal' ? 'Normal' : item.spicyLevel === 'medium' ? 'Medium' : item.spicyLevel === 'extra' ? 'Extra Spicy' : item.spicyLevel === 'no spicy' ? 'No Spicy' : ''}`).join(', ');
             notes += (notes ? '\n' : '') + 'Spice preferences: ' + spicyNotes;
         }
 
@@ -477,4 +543,3 @@ function closeSpicyLevelModal() {
 
 // Initialize cart count on load
 updateCartCount();
-
