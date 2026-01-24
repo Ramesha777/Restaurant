@@ -1495,6 +1495,9 @@ function adminDisplayOrderDetails2(order) {
                 <button class="btn btn-secondary" onclick="adminAddItemToOrder('${order.id}')">
                     Add Item
                 </button>
+                <button class="btn btn-danger" onclick="adminDeleteOrder('${order.id}')">
+                    🗑️ Delete Order
+                </button>
                 <select id="adminOrderStatusSelect_${order.id}" onchange="adminUpdateOrderStatus('${order.id}', this.value)"
                         style="padding: 0.75rem; border: 2px solid #e0e0e0; border-radius: 8px;">
                     <option value="pending" ${status === 'pending' ? 'selected' : ''}>Pending</option>
