@@ -361,8 +361,8 @@ function renderEmployeeMenuGroupedByFoodType(items) {
         
         // Add food type heading
         html += `
-            <div style="grid-column: 1/-1; margin-top: 2rem; margin-bottom: 1rem;">
-                <h3 style="font-weight: bold; font-size: 1.5rem; text-transform: uppercase; color: #333; border-bottom: 3px solid #ff6f00; padding-bottom: 0.5rem;">
+            <div style="grid-column: 1/-1; margin-top: 1.5rem; margin-bottom: 0.75rem;">
+                <h3 style="font-weight: bold; font-size: 1rem; text-transform: uppercase; color: #333; border-bottom: 3px solid #ff6f00; padding-bottom: 0.5rem;">
                     ${foodType === 'other' ? 'Other Items' : foodType}
                 </h3>
             </div>
@@ -607,8 +607,8 @@ async function employeeCheckout() {
         updateEmployeeCartCount();
 
         // Clear the order details section
-        document.getElementById('currentOrderTableNumber').value = '';
-        document.getElementById('currentOrderNotes').value = '';
+        document.getElementById('employeeTableNumber').value = '';
+        document.getElementById('employeeOrderNotes').value = '';
 
         // Clear localStorage
         localStorage.removeItem('employeeCurrentTableNumber');
@@ -1092,6 +1092,7 @@ async function printBill(orderOrId) {
     // Wait for content to load, then print
     setTimeout(() => {
         billWindow.print();
+        billWindow.close();
     }, 250);
 }
 

@@ -188,13 +188,6 @@
 
                 <!-- Orders View -->
                 <div id="adminOrdersView">
-                    <div id="adminOrderFilters" style="display: flex; gap: 1rem; margin-bottom: 2rem; flex-wrap: wrap;">
-                        <button class="filter-btn active" data-status="" onclick="adminFilterOrders('')">All</button>
-                        <button class="filter-btn" data-status="pending" onclick="adminFilterOrders('pending')">Pending</button>
-                        <button class="filter-btn" data-status="preparing" onclick="adminFilterOrders('preparing')">Preparing</button>
-                        <button class="filter-btn" data-status="ready" onclick="adminFilterOrders('ready')">Ready</button>
-                        <button class="filter-btn" data-status="completed" onclick="adminFilterOrders('completed')">Completed</button>
-                    </div>
                     <div style="display: flex; gap: 1rem; align-items: center; margin-bottom: 2rem; flex-wrap: wrap;">
                         <div style="min-width: 250px;">
                             <input type="text" id="adminOrderSearchInput2" placeholder="Search by Order Number (e.g., 1234)"
@@ -214,6 +207,11 @@
                             <div style="display: flex; align-items: flex-end;">
                                 <button class="btn btn-success" onclick="exportOrdersToCSV()" style="padding: 0.5rem 1rem;">
                                     📊 Export CSV
+                                </button>
+                            </div>
+                            <div style="display: flex; align-items: flex-end;">
+                                <button class="btn btn-danger" onclick="adminDeleteAllOrdersWithConfirmation()" style="padding: 0.5rem 1rem;">
+                                    Del All Orders
                                 </button>
                             </div>
                         </div>
@@ -419,7 +417,6 @@
                     <label>Role</label>
                     <select id="editUserRole" required>
                         <option value="staff">Staff</option>
-                        <option value="manager">Manager</option>
                         <option value="admin">Admin</option>
                     </select>
                 </div>

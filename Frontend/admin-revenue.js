@@ -103,7 +103,61 @@ async function adminDeleteOrder(orderId) {
         // Close the order details view and return to orders list
         document.getElementById('adminOrderSearchResults2').style.display = 'none';
         document.getElementById('adminOrdersContainer').style.display = 'grid';
-        
+
+        // Clear search input
+        const searchInput = document.getElementById('adminOrderSearchInput2');
+        if (searchInput) {
+            searchInput.value = '';
+        }
+
+        // Reload orders
+        if (typeof adminLoadOrders === 'function') {
+            adminLoadOrders();
+        }
+        if (typeof loadOrders === 'function') {
+            loadOrders();
+        }
+        if (typeof loadOverview === 'function') {
+            loadOverview();
+        }
+
+    } catch (error) {
+        console.error('Error deleting order:', error);
+        showNotification('Error deleting order. Please try again.', 'error');
+    }
+}
+
+// Delete entire order with double confirmation
+async function adminDeleteOrderWithConfirmation(orderId) {
+    // First confirmation
+    if (!confirm('Are you sure you want to delete this entire order? This action cannot be undone. Have you backed up  CSV file ? ?')) {
+        return;
+    }
+
+    // Second confirmation: random 7 letters
+    const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    let letterString = '';
+    for (let i = 0; i < 7; i++) {
+        const randomIndex = Math.floor(Math.random() * letters.length);
+        letterString += letters[randomIndex];
+    }
+
+    const userInput = prompt(`To confirm deletion, please type the following letters exactly:\n\n${letterString}\n\nType them here:`);
+
+    if (!userInput || userInput.trim() !== letterString) {
+        showNotification('Deletion cancelled. Letters did not match.', 'error');
+        return;
+    }
+
+    // Proceed with deletion
+    try {
+        await firebase.firestore().collection('orders').doc(orderId).delete();
+        showNotification('Order deleted successfully', 'success');
+
+        // Close the order details view and return to orders list
+        document.getElementById('adminOrderSearchResults2').style.display = 'none';
+        document.getElementById('adminOrdersContainer').style.display = 'grid';
+
         // Clear search input
         const searchInput = document.getElementById('adminOrderSearchInput2');
         if (searchInput) {
@@ -455,4 +509,59 @@ async function adminUpdateDiscountType(orderId, discountType) {
     }
 }
 
+// Delete all orders with double confirmation
+async function adminDeleteAllOrdersWithConfirmation() {
+    // First confirmation
+    if (!confirm('Are you sure you want to delete ALL orders? This action cannot be undone. Have you backed up CSV file?')) {
+        return;
+    }
 
+    // Second confirmation: random 7 letters
+    const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    let letterString = '';
+    for (let i = 0; i < 7; i++) {
+        const randomIndex = Math.floor(Math.random() * letters.length);
+        letterString += letters[randomIndex];
+    }
+
+    const userInput = prompt(`To confirm deletion, please type the following letters exactly:\n\n${letterString}\n\nType them here:`);
+
+    if (!userInput || userInput.trim() !== letterString) {
+        showNotification('Deletion cancelled. Letters did not match.', 'error');
+        return;
+    }
+
+    // Proceed with deletion of all orders
+    try {
+        const ordersSnapshot = await firebase.firestore().collection('orders').get();
+        const batch = firebase.firestore().batch();
+
+        ordersSnapshot.docs.forEach(doc => {
+            batch.delete(doc.ref);
+        });
+
+        await batch.commit();
+
+        showNotification(`All ${ordersSnapshot.size} orders deleted successfully`, 'success');
+
+        // Reload orders and overview
+        if (typeof adminLoadOrders === 'function') {
+            adminLoadOrders();
+        }
+        if (typeof loadOrders === 'function') {
+            loadOrders();
+        }
+        if (typeof loadOverview === 'function') {
+            loadOverview();
+        }
+
+    } catch (error) {
+        console.error('Error deleting all orders:', error);
+        showNotification('Error deleting all orders. Please try again.', 'error');
+    }
+}
+
+// Export for testing
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = { calculateTodaysRevenue };
+}

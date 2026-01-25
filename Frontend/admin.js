@@ -383,8 +383,8 @@ async function deleteUser(userId) {
     if (!confirm('Are you sure you want to delete this user? This action cannot be undone.')) return;
     
     try {
-        // Note: This only deletes the user document, not the Firebase Auth user
-        // To fully delete, you'd need to use Firebase Admin SDK on the backend
+        // Delete user from Firestore
+        
         await firebase.firestore().collection('users').doc(userId).delete();
         showNotification('User deleted successfully', 'success');
         loadUsers();
@@ -393,7 +393,7 @@ async function deleteUser(userId) {
         showNotification('Error deleting user', 'error');
     }
 }
-
+// Menu Item Functions
 function openAddMenuItemModal() {
     currentEditingItemId = null;
     document.getElementById('modalTitle').textContent = 'Add Menu Item';
@@ -401,11 +401,12 @@ function openAddMenuItemModal() {
     document.getElementById('menuItemModal').classList.add('active');
 }
 
+// Close menu item modal
 function closeMenuItemModal() {
     document.getElementById('menuItemModal').classList.remove('active');
     currentEditingItemId = null;
 }
-
+// Edit menu item
 async function editMenuItem(id) {
     try {
         const doc = await firebase.firestore().collection('menu').doc(id).get();
@@ -427,7 +428,7 @@ async function editMenuItem(id) {
         showNotification('Error loading menu item', 'error');
     }
 }
-
+// Delete menu item
 async function deleteMenuItem(id) {
     if (!confirm('Are you sure you want to delete this menu item?')) return;
     
@@ -439,7 +440,7 @@ async function deleteMenuItem(id) {
         showNotification('Error deleting menu item', 'error');
     }
 }
-
+// Handle menu item form submission
 document.getElementById('menuItemForm').addEventListener('submit', async (e) => {
     e.preventDefault();
 
@@ -454,7 +455,7 @@ document.getElementById('menuItemForm').addEventListener('submit', async (e) => 
         available: document.getElementById('itemAvailable').value === 'true',
         updatedAt: firebase.firestore.FieldValue.serverTimestamp()
     };
-
+// Save or update menu item
     try {
         if (currentEditingItemId) {
             await firebase.firestore().collection('menu').doc(currentEditingItemId).update(itemData);
@@ -464,14 +465,14 @@ document.getElementById('menuItemForm').addEventListener('submit', async (e) => 
             await firebase.firestore().collection('menu').add(itemData);
             showNotification('Menu item added successfully', 'success');
         }
-
+// Close modal and reload menu items
         closeMenuItemModal();
         loadMenuItems();
     } catch (error) {
         showNotification('Error saving menu item', 'error');
     }
 });
-
+// Update order status
 async function updateOrderStatus(orderId, status) {
     try {
         await firebase.firestore().collection('orders').doc(orderId).update({
@@ -503,11 +504,11 @@ async function openEditUserModal(userId) {
         showNotification('Error loading user details', 'error');
     }
 }
-
+// Close edit user modal
 function closeEditUserModal() {
     document.getElementById('editUserModal').classList.remove('active');
 }
-
+// Open change password modal
 function openChangePasswordModal(userId, userName) {
     document.getElementById('changePasswordUserId').value = userId;
     document.getElementById('changePasswordUserName').textContent = userName;
@@ -857,11 +858,7 @@ function renderAdminMenu() {
         filteredItems = filteredItems.filter(item => item.category === adminCurrentCategory);
     }
 
-    // Apply food type filter
-    if (adminCurrentFoodType) {
-        filteredItems = filteredItems.filter(item => item.foodType === adminCurrentFoodType);
-    }
-
+// Get menu grid container
     const menuGrid = document.getElementById('adminMenuGrid');
 
     if (filteredItems.length === 0) {
@@ -907,8 +904,8 @@ function renderAdminMenuGroupedByFoodType(items) {
         
         // Add food type heading
         html += `
-            <div style="grid-column: 1/-1; margin-top: 2rem; margin-bottom: 1rem;">
-                <h3 style="font-weight: bold; font-size: 1.5rem; text-transform: uppercase; color: #333; border-bottom: 3px solid #ff6f00; padding-bottom: 0.5rem;">
+            <div style="grid-column: 1/-1; margin-top: 1.5rem; margin-bottom: 0.75rem;">
+                <h3 style="font-weight: bold; font-size: 1rem; text-transform: uppercase; color: #333; border-bottom: 3px solid #ff6f00; padding-bottom: 0.5rem;">
                     ${foodType === 'other' ? 'Other Items' : foodType}
                 </h3>
             </div>
@@ -969,7 +966,7 @@ function renderAdminMenuGrid(items) {
                     </div>
                     <p class="menu-item-description">${item.description || 'Delicious item from our kitchen'}</p>
                     <div class="menu-item-footer">
-                        <span style="font-size: 0.85rem; color: #666; text-transform: capitalize;">${item.category || 'main'} ${item.foodType ? `• ${item.foodType}` : ''}</span>
+                        <span style="font-size: 0.4rem; color: #666; text-transform: capitalize;">${item.category || 'main'} ${item.foodType ? `• ${item.foodType}` : ''}</span>
                     ${isUnavailable ?
                         '<span style="color: #f44336; font-weight: 600;">Unavailable</span>' :
                         `<div class="quantity-controls">
@@ -1452,19 +1449,10 @@ function adminDisplayOrderDetails2(order) {
                 <button class="btn btn-secondary" onclick="adminOpenEditOrderModal('${order.id}')">
                     Edit Order Details
                 </button>
-                <button class="btn btn-secondary" onclick="adminAddItemToOrder('${order.id}')">
-                    Add Item
-                </button>
+                
                 <button class="btn btn-danger" onclick="adminDeleteOrder('${order.id}')">
                     🗑️ Delete Order
                 </button>
-                <select id="adminOrderStatusSelect_${order.id}" onchange="adminUpdateOrderStatus('${order.id}', this.value)"
-                        style="padding: 0.75rem; border: 2px solid #e0e0e0; border-radius: 8px;">
-                    <option value="pending" ${status === 'pending' ? 'selected' : ''}>Pending</option>
-                    <option value="preparing" ${status === 'preparing' ? 'selected' : ''}>Preparing</option>
-                    <option value="ready" ${status === 'ready' ? 'selected' : ''}>Ready</option>
-                    <option value="completed" ${status === 'completed' ? 'selected' : ''}>Completed</option>
-                </select>
             </div>
 
             ${paymentStatus === 'confirmed' ? `
@@ -1667,6 +1655,7 @@ async function adminPrintBill(orderOrId) {
     // Wait for content to load, then print
     setTimeout(() => {
         billWindow.print();
+        billWindow.close();
     }, 250);
 }
 
@@ -2039,4 +2028,9 @@ async function exportOrdersToCSV() {
         console.error('Error exporting orders:', error);
         showNotification('Error exporting orders. Please try again.', 'error');
     }
+}
+
+// Export for testing
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = { generateOrderNumber };
 }

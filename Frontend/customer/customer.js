@@ -235,8 +235,8 @@ function renderMenuGroupedByFoodType(items) {
         
         // Add food type heading
         html += `
-            <div style="grid-column: 1/-1; margin-top: 2rem; margin-bottom: 1rem;">
-                <h3 style="font-weight: bold; font-size: 1.5rem; text-transform: uppercase; color: #333; border-bottom: 3px solid #ff6f00; padding-bottom: 0.5rem;">
+            <div style="grid-column: 1/-1; margin-top: 1.5rem; margin-bottom: 0.75rem;">
+                <h3 style="font-weight: bold; font-size: 1rem; text-transform: uppercase; color: #333; border-bottom: 3px solid #ff6f00; padding-bottom: 0.5rem;">
                     ${foodType === 'other' ? 'Other Items' : foodType}
                 </h3>
             </div>

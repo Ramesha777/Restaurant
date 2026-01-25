@@ -81,6 +81,48 @@ Once you have configured Firebase, you can open the `Frontend/index.html` file i
     - As an **employee**, you can view and manage incoming orders.
     - As an **admin**, you have full control over the system.
 
+## Bill Printing on Thermal Printers
+
+This system supports printing bills directly to a thermal printer for efficient order processing. Assuming the thermal printer is already connected to your PC/system and functioning correctly (e.g., you can print test pages from the OS), follow these steps to integrate bill printing.
+
+### Hardware Setup
+- Ensure the thermal printer (e.g., Epson TM series or Star Micronics) is connected via USB, serial, Ethernet, or Bluetooth.
+- Verify it's recognized by your OS and set as the default printer if needed.
+
+### Software Integration
+- Use a compatible library for your backend:
+  - **Node.js**: Install `node-thermal-receipt-printer` or `escpos` via npm (`npm install node-thermal-receipt-printer`).
+  - **Python**: Use `python-escpos` or `PySerial`.
+- Integrate into your backend (e.g., `Backend/firebase.js`) or a dedicated print service.
+
+### Code Implementation
+- Detect the printer by name, port, or IP.
+- Format bill data (e.g., order items, totals) into printable text using ESC/POS commands.
+- Example in Node.js:
+  ```javascript
+  const ThermalPrinter = require('node-thermal-receipt-printer').printer;
+  const PrinterTypes = require('node-thermal-receipt-printer').types;
+
+  const printer = new ThermalPrinter({
+    type: PrinterTypes.EPSON,
+    interface: '/dev/usb/lp0' // or 'printer_name' if shared
+  });
+
+  printer.println('Restaurant Bill');
+  printer.println('Item: Pizza - $10');
+  printer.println('Total: $10');
+  printer.cut();
+  printer.execute();
+  ```
+- Trigger printing on order completion or via employee/admin action.
+
+### Testing and Deployment
+- Print sample bills to verify formatting and connectivity.
+- Handle errors (e.g., printer offline, paper out) in your code.
+- For web apps, print from the server-side to access local printers.
+
+If using a specific OS or framework, adjust accordingly. Refer to printer documentation for model-specific commands.
+
 ## Troubleshooting
 
 If you encounter any issues, please refer to the [Troubleshooting Guide](troubleshooting-guide.md).
