@@ -1,4 +1,7 @@
 // Check authentication and role - Wait for Firebase to be ready
+console.log("toggleSidebar global?", typeof window.toggleSidebar);
+
+
 if (typeof firebase !== 'undefined' && firebase.auth) {
     firebase.auth().onAuthStateChanged(async (user) => {
         if (!user) {
@@ -31,7 +34,7 @@ if (typeof firebase !== 'undefined' && firebase.auth) {
 }
 
 let currentEditingItemId = null;
-let availableCategories = ['starter', 'main', 'dessert', 'beverage'];
+let availableCategories = [];
 let availableFoodTypes = ['momo', 'naan', 'curry', 'rice', 'noodle'];
 let adminCurrentFilter = '';
 let adminOrdersUnsubscribe = null;
@@ -43,6 +46,8 @@ let adminCurrentFoodType = '';
 let currentAdminName = '';
 
 async function initializeDashboard() {
+    setupMobileResponsiveness();
+
     // Sidebar navigation
     document.querySelectorAll('.sidebar-menu li').forEach(item => {
         item.addEventListener('click', () => {
@@ -58,6 +63,9 @@ async function initializeDashboard() {
             else if (section === 'orders') loadOrders();
             else if (section === 'users') loadUsers();
             else if (section === 'overview') loadOverview();
+            else if (section === 'categories') {
+                loadCategoriesAndFoodTypes();
+            }
             else if (section === 'customer-order') {
                 adminLoadOrders();
                 adminShowOrdersView();
@@ -115,9 +123,9 @@ async function loadCategories() {
             availableCategories = ['starter', 'main', 'dessert', 'beverage'];
             // Save default categories
             const batch = firebase.firestore().batch();
-            availableCategories.forEach(cat => {
+            availableCategories.forEach(category => {
                 const ref = firebase.firestore().collection('categories').doc();
-                batch.set(ref, { name: cat });
+                batch.set(ref, { name: category });
             });
             await batch.commit();
         }
@@ -157,10 +165,21 @@ async function loadFoodTypes() {
     }
 }
 
+// Load both categories and food types and update related UI
+async function loadCategoriesAndFoodTypes() {
+    await Promise.all([loadCategories(), loadFoodTypes()]);
+    try {
+        updateAdminCategoryFilters();
+        updateAdminFoodTypeFilters();
+    } catch (e) {
+        console.error('Error updating category/foodtype filters:', e);
+    }
+}
+
 function updateCategorySelect() {
     const select = document.getElementById('itemCategory');
-    select.innerHTML = '<option value="">Select Category</option>' +
-        availableCategories.map(cat => `<option value="${cat}">${cat.charAt(0).toUpperCase() + cat.slice(1)}</option>`).join('');
+    if (!select) return;
+    select.innerHTML = availableCategories.map(category => `<option value="${category}">${category.charAt(0).toUpperCase() + category.slice(1)}</option>`).join('');
 }
 
 function updateFoodTypeSelect() {
@@ -177,6 +196,19 @@ function updateAdminFoodTypeFilters() {
     }
 }
 
+function updateAdminCategoryFilters() {
+    const container = document.getElementById('adminCategoryFilters');
+    if (!container) return;
+
+    let filterHtml = '<button class="filter-btn active" data-category="" onclick="filterAdminMenu(\'\')">All Categories</button>';
+
+    availableCategories.forEach(category => {
+        filterHtml += `<button class="filter-btn" data-category="${category}" onclick="filterAdminMenu('${category}')">${category.charAt(0).toUpperCase() + category.slice(1)}</button>`;
+    });
+
+    container.innerHTML = filterHtml;
+}
+
 function addNewCategory() {
     const categoryName = prompt('Enter new category name:');
     if (!categoryName || !categoryName.trim()) return;
@@ -189,6 +221,7 @@ function addNewCategory() {
 
     availableCategories.push(normalizedName);
     updateCategorySelect();
+    updateAdminCategoryFilters();
 
     // Save to Firestore
     firebase.firestore().collection('categories').add({
@@ -398,6 +431,8 @@ function openAddMenuItemModal() {
     currentEditingItemId = null;
     document.getElementById('modalTitle').textContent = 'Add Menu Item';
     document.getElementById('menuItemForm').reset();
+    updateCategorySelect();
+    updateFoodTypeSelect();
     document.getElementById('menuItemModal').classList.add('active');
 }
 
@@ -422,6 +457,8 @@ async function editMenuItem(id) {
         document.getElementById('itemAvailable').value = item.available !== false ? 'true' : 'false';
         document.getElementById('itemSpicyLevel').value = item.spicyLevel || 'not needed';
 
+        updateCategorySelect();
+        updateFoodTypeSelect();
         document.getElementById('menuItemModal').classList.add('active');
     } catch (error) {
         showNotification('Error loading menu item', 'error');
@@ -1464,7 +1501,8 @@ function adminDisplayOrderDetails2(order) {
                     <option value="preparing" ${status === 'preparing' ? 'selected' : ''}>Preparing</option>
                     <option value="ready" ${status === 'ready' ? 'selected' : ''}>Ready</option>
                     <option value="completed" ${status === 'completed' ? 'selected' : ''}>Completed</option>
-                </select>
+                    <option value="cancelled" ${status === 'cancelled' ? 'selected' : ''}>Cancelled</option>
+                </select> 
             </div>
 
             ${paymentStatus === 'confirmed' ? `
@@ -1754,7 +1792,7 @@ async function adminAddItemToOrder(orderId) {
 
         // Load customer menu and show it
         loadAdminMenu();
-        adminShowOrdersView(); // This will show the menu view
+        adminShowMenuView(); // This will show the menu view
 
         // Pre-fill table number if available
         if (orderData.tableNumber) {
@@ -2040,3 +2078,57 @@ async function exportOrdersToCSV() {
         showNotification('Error exporting orders. Please try again.', 'error');
     }
 }
+
+// Toggle sidebar for mobile devices
+function toggleSidebar() {
+    const sidebar = document.querySelector('.sidebar');
+    const overlay = document.querySelector('.sidebar-overlay');
+
+    if (sidebar) {
+        sidebar.classList.toggle('sidebar-open');
+        // Clear inline style to ensure CSS class takes precedence
+        sidebar.style.left = '';
+    }
+
+    if (overlay) {
+        overlay.classList.toggle('active');
+    }
+}
+
+function setupMobileResponsiveness() {
+    // Create hamburger button if it doesn't exist
+    if (!document.querySelector('.hamburger-btn')) {
+        const btn = document.createElement('button');
+        btn.className = 'hamburger-btn';
+        btn.innerHTML = '☰';
+        btn.onclick = toggleSidebar;
+        document.body.appendChild(btn);
+    }
+    
+    // Create overlay if it doesn't exist
+    if (!document.querySelector('.sidebar-overlay')) {
+        const overlay = document.createElement('div');
+        overlay.className = 'sidebar-overlay';
+        overlay.onclick = toggleSidebar;
+        document.body.appendChild(overlay);
+    }
+
+    // Add close button to sidebar for mobile
+    const sidebar = document.querySelector('.sidebar');
+    if (sidebar && !sidebar.querySelector('.sidebar-close-btn')) {
+        const closeBtn = document.createElement('button');
+        closeBtn.className = 'sidebar-close-btn';
+        closeBtn.innerHTML = '×';
+        closeBtn.onclick = toggleSidebar;
+        sidebar.insertBefore(closeBtn, sidebar.firstChild);
+    }
+    
+    // Close sidebar when clicking menu items on mobile
+    document.querySelectorAll('.sidebar-menu li').forEach(item => {
+        item.addEventListener('click', () => {
+            if (window.innerWidth <= 768) {
+                toggleSidebar();
+            }
+        });
+    });
+} 

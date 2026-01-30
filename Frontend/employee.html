@@ -71,17 +71,11 @@
             <div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; width: 100%;">
                 <div style="flex: 1; min-width: 200px;">
                     <input type="text" id="orderSearchInput" placeholder="Search by Order Number (e.g., 1234)" 
-                           style="width: 100%; padding: 0.75rem; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 1rem;"
+                           style="width: 100%; padding: 0.75rem; border: 2px solid black; border-radius: 8px; font-size: 1rem;"
                            onkeyup="handleOrderSearch(event)">
-                    <button class="btn btn-secondary" onclick="searchOrder()" style="margin-top: 0.5rem; width: 100%;">Search Order</button>
+                    <button class="btn btn-secondary" onclick="searchOrder()" style="margin-top: 0.5rem; width: 50%; background:orangered">Search Order</button>
                 </div>
-                <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
-                    <button class="filter-btn active" data-status="" onclick="filterOrders('')">All Orders</button>
-                    <button class="filter-btn" data-status="pending" onclick="filterOrders('pending')">Pending</button>
-                    <button class="filter-btn" data-status="preparing" onclick="filterOrders('preparing')">Preparing</button>
-                    <button class="filter-btn" data-status="ready" onclick="filterOrders('ready')">Ready</button>
-                </div>
-            </div>
+                        </div>
         </div>
 
         <!-- Orders View -->
@@ -91,11 +85,11 @@
                 <div class="card">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
                         <h2>Order Details</h2>
-                        <button class="btn btn-secondary" onclick="clearOrderSearch()" style="color: purple;">Close</butto>
+                        <button class="btn btn-secondary" onclick="clearOrderSearch()" style="color:red; background:whitesmoke">Close</button>            
                     </div>
                     <div id="orderDetailsContent"></div>
                 </div>
-            </div>
+            </div> 
             
             <div class="orders-container" id="ordersContainer">
                 <p style="text-align: center; color: #666;">Loading orders...</p>
@@ -107,10 +101,10 @@
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
                 <h1>Customer Order</h1>
                 <div>
-                    <button class="btn btn-secondary" onclick="showEmployeeCart()" style="margin-right: 1rem; color:#ff6f00">
+                    <button class="btn btn-secondary" onclick="showEmployeeCart()" style="margin-right: 1rem; color: #ffffff; background: #ff6f00;">
                         🛒 Cart (<span id="employeeCartCount">0</span>)
                     </button>
-                    <button class="btn btn-secondary" onclick="showEmployeeOrders()" style="color:purple">View Orders</button>
+                    <button class="btn btn-secondary" onclick="showEmployeeOrders()" style="color: #ffffff; background: #ff6f00;">View Orders</button> 
                 </div>
             </div>
 
@@ -118,12 +112,7 @@
 
             <!-- Menu View -->
             <div id="employeeMenuView">
-                <div class="order-filters" style="margin-bottom: 2rem;">
-                    <button class="filter-btn active" data-category="" onclick="filterEmployeeMenu('')">All</button>
-                    <button class="filter-btn" data-category="starter" onclick="filterEmployeeMenu('starter')">Starters</button>
-                    <button class="filter-btn" data-category="main" onclick="filterEmployeeMenu('main')">Main Course</button>
-                    <button class="filter-btn" data-category="dessert" onclick="filterEmployeeMenu('dessert')">Desserts</button>
-                    <button class="filter-btn" data-category="beverage" onclick="filterEmployeeMenu('beverage')">Beverages</button>
+                <div id="employeeCategoryFilters" class="order-filters" style="margin-bottom: 2rem;">
                 </div>
                 <div class="menu-grid" id="employeeMenuGrid">
                     <p style="text-align: center; color: #666;">Loading menu...</p>

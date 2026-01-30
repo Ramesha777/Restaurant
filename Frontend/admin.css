@@ -133,7 +133,7 @@
 .menu-item-card {
     background: white;
     border-radius: 8px;
-    overflow: hidden;
+    overflow: auto;
     box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     transition: transform 0.3s ease, box-shadow 0.3s ease;
     cursor: pointer;
@@ -563,6 +563,56 @@
     }
 }
 
+/* Hamburger Button */
+.hamburger-btn {
+    display: none;
+    position: fixed;
+    top: 1rem;
+    left: 1rem;
+    z-index: 990;
+    background: #ff6f00;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 0.5rem 0.75rem;
+    font-size: 1.5rem;
+    cursor: pointer;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    transition: background 0.3s;
+}
+
+.hamburger-btn:hover {
+    background: #e55a00;
+}
+
+.hamburger-btn:focus,
+.hamburger-btn:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(255,111,0,0.18), 0 0 0 6px rgba(0,0,0,0.06);
+    border-radius: 8px;
+    transition: box-shadow 0.18s ease-in-out;
+}
+
+.sidebar-close-btn {
+    display: none;
+    position: absolute;
+    top: 0.5rem;
+    right: 1rem;
+    background: none;
+    border: none;
+    font-size: 2rem;
+    cursor: pointer;
+    color: #333;
+}
+
+.sidebar-close-btn:focus,
+.sidebar-close-btn:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(0,0,0,0.08), 0 0 0 3px #ff6f00;
+    border-radius: 4px;
+    transition: box-shadow 0.18s ease-in-out;
+} 
+
 /* Responsive Design */
 @media (max-width: 1024px) {
     .sidebar {
@@ -579,15 +629,52 @@
 }
 
 @media (max-width: 768px) {
+    .hamburger-btn {
+        display: block;
+    }
+
+    .sidebar-close-btn {
+        display: block;
+    }
+
     .dashboard {
         flex-direction: column;
     }
 
     .sidebar {
+        position: fixed;
+        top: 0;
+        left: -280px;
+        width: 280px;
+        max-width: 85vw;
+        height: 100vh;
+        z-index: 9999;
+        background: white;
+        transition: left 0.3s ease;
+        border-right: 2px solid #e0e0e0;
+        border-bottom: none;
+        padding: 2rem 0;
+        box-shadow: 2px 0 8px rgba(0,0,0,0.1);
+        overflow-y: auto;
+    }
+
+    .sidebar.sidebar-open {
+        left: 0 !important;
+    }
+
+    .sidebar-overlay {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
         width: 100%;
-        border-right: none;
-        border-bottom: 2px solid #e0e0e0;
-        padding: 1rem 0;
+        height: 100%;
+        background: rgba(0,0,0,0.5);
+        z-index: 9998;
+    }
+
+    .sidebar-overlay.active {
+        display: block;
     }
 
     .sidebar-menu li {
@@ -595,7 +682,7 @@
     }
 
     .main-content {
-        padding: 1rem;
+        padding: 4rem 1rem 1rem 1rem;
     }
 
     .page-header {

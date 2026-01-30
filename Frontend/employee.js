@@ -1,6 +1,18 @@
 let currentFilter = '';
 let ordersUnsubscribe = null;
 let currentEmployeeName = '';
+let availableCategories = [];
+
+async function loadCategories() {
+    try {
+        firebase.firestore().collection('categories').orderBy('name').onSnapshot(snapshot => {
+            availableCategories = snapshot.docs.map(doc => doc.data().name);
+            updateEmployeeCategoryFilters();
+        });
+    } catch (error) {
+        console.error('Error loading categories:', error);
+    }
+}
 
 // Check authentication and role - Wait for Firebase to be ready
 if (typeof firebase !== 'undefined' && firebase.auth) {
@@ -33,8 +45,9 @@ if (typeof firebase !== 'undefined' && firebase.auth) {
 
             currentEmployeeName = userData?.name || user.email;
             document.getElementById('employeeName').textContent = `Welcome, ${currentEmployeeName}!`;
+            await loadCategories();
             initializeDashboard();
-            redirectInProgress = false;
+            redirectInProgress = false; 
         }
     });
 } else {
@@ -51,25 +64,6 @@ function initializeDashboard() {
     document.getElementById('ordersView').style.display = 'block';
     document.getElementById('orderFilters').style.display = 'flex';
     document.getElementById('customerOrderView').style.display = 'none';
-}
-
-function filterOrders(status) {
-    currentFilter = status;
-
-    // Update active filter button
-    document.querySelectorAll('.filter-btn').forEach(btn => {
-        btn.classList.remove('active');
-    });
-    document.querySelector(`[data-status="${status}"]`).classList.add('active');
-
-    // Unsubscribe from previous subscription if exists
-    if (ordersUnsubscribe) {
-        ordersUnsubscribe();
-        ordersUnsubscribe = null;
-    }
-
-    // Reload orders with filter
-    loadOrders();
 }
 
 function subscribeToOrders() {
@@ -253,10 +247,37 @@ function toggleEmployeeView() {
         orderFilters.style.display = 'none';
         customerOrderView.style.display = 'block';
         toggleBtn.textContent = '📋 View Orders';
+        updateEmployeeCategoryFilters();
         loadEmployeeMenu();
         showEmployeeMenu();
     }
 }
+
+function updateEmployeeCategoryFilters() {
+    const container = document.getElementById('employeeCategoryFilters');
+    if (!container) return;
+
+    // Clear existing filters
+    container.innerHTML = '';
+
+    // 'All' button
+    const allBtn = document.createElement('button');
+    allBtn.className = 'filter-btn active';
+    allBtn.dataset.category = '';
+    allBtn.textContent = 'All Categories';
+    allBtn.addEventListener('click', () => filterEmployeeMenu(''));
+    container.appendChild(allBtn);
+
+    // Create a button for each category using DOM methods to avoid HTML injection
+    availableCategories.forEach(category => {
+        const btn = document.createElement('button');
+        btn.className = 'filter-btn';
+        btn.dataset.category = category;
+        btn.textContent = category.charAt(0).toUpperCase() + category.slice(1);
+        btn.addEventListener('click', () => filterEmployeeMenu(category));
+        container.appendChild(btn);
+    });
+} 
 
 function showEmployeeOrders() {
     toggleEmployeeView();
@@ -606,13 +627,9 @@ async function employeeCheckout() {
         employeeCart = [];
         updateEmployeeCartCount();
 
-        // Clear the order details section
-        document.getElementById('currentOrderTableNumber').value = '';
-        document.getElementById('currentOrderNotes').value = '';
-
-        // Clear localStorage
-        localStorage.removeItem('employeeCurrentTableNumber');
-        localStorage.removeItem('employeeCurrentNotes');
+        // Clear the cart form
+        document.getElementById('employeeTableNumber').value = '';
+        document.getElementById('employeeOrderNotes').value = '';
 
         showNotification(`Order #${orderNumber} placed and confirmed successfully!`, 'success');
         showEmployeeMenu();

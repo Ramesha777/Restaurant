@@ -1,15 +1,9 @@
-# Spicy Level Feature Implementation
+# Admin Page Responsiveness Task
 
-## Tasks
-- [x] Update admin.html: Change spicy level select options to "not needed" and "ask"
-- [x] Update admin.js:
-  - In editMenuItem, set default to 'not needed'
-  - In loadMenuItems, update display condition to show 'Ask for Spicy Level' when 'ask'
-- [x] Update customer.html: Change modal buttons to normal, medium, extra, no spicy
-- [x] Update customer.js:
-  - Update selectSpicyLevel function for new values
-  - Update renderCart display for new spicy levels
-  - Update checkout notes mapping
-- [x] Update admin customer order section: Add spicy level modal and functionality
-- [x] Update employee order section: Add spicy level modal and functionality
-- [x] Test the implementation
+## Task: Make admin page responsive for small devices by adding a hamburger menu button to toggle the sidebar.
+
+### Steps:
+- [x] Add hamburger menu button (three lines) in the header of admin.html for small devices.
+- [x] Update admin.css to hide sidebar by default on small screens (max-width: 768px) and style the hamburger button.
+- [x] Add toggle functionality in admin.js to show/hide the sidebar when hamburger button is clicked.
+- [ ] Test the responsiveness on small devices.

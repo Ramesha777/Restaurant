@@ -9,10 +9,11 @@
     <link rel="stylesheet" href="admin.css">
     <style>
         /* Custom overrides for 5-column layout and smaller cards */
-        @media (min-width: 1200px) {
-            .menu-grid {
-                grid-template-columns: repeat(5, 1fr) !important;
-            }
+        .menu-grid,
+        .menu-grid-admin {
+            display: grid;
+            gap: 1rem;
+            grid-template-columns: repeat(5, 1fr) !important;
         }
         
         .menu-item-image {
@@ -47,9 +48,14 @@
         <div class="main-content">
             <!-- Header with Logout -->
             <div style="display: flex; justify-content: space-between; align-items: center; padding: 1rem 0; border-bottom: 2px solid #e0e0e0; margin-bottom: 2rem;">
-                <div>
-                    <h1 style="margin: 0; color: #333;">Admin Dashboard</h1>
-                    <p id="adminWelcomeMsg" style="margin: 0.5rem 0 0 0; color: #666; font-size: 0.9rem;">Welcome back, Admin</p>
+                <div style="display: flex; align-items: center; gap: 1rem;">
+                    <button class="hamburger-btn" onclick="toggleSidebar()">
+                        ☰
+                    </button>
+                    <div>
+                        <h1 style="margin: 0; color: #333;">Admin Dashboard</h1>
+                        <p id="adminWelcomeMsg" style="margin: 0.5rem 0 0 0; color: #666; font-size: 0.9rem;">Welcome back, Admin</p>
+                    </div>
                 </div>
                 <button class="btn btn-danger" onclick="logout()" style="padding: 0.75rem 1.5rem;">
                     🚪 Logout
@@ -92,7 +98,11 @@
                     <h1>Menu Management</h1>
                     <button class="btn btn-primary" onclick="openAddMenuItemModal()">+ Add Menu Item</button>
                 </div>
-                <div class="menu-grid" id="menuGrid"></div>
+
+
+                <div id="menuGrid" class="menu-grid-admin">
+                    <!-- Menu items for management will be loaded here by loadMenuItems() -->
+                </div>
             </div>
 
             <!-- Orders Section -->
@@ -102,7 +112,7 @@
                     <div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
                         <div style="min-width: 250px;">
                             <input type="text" id="adminOrderSearchInput" placeholder="Search by Order Number (e.g., 1234)"
-                                   style="width: 100%; padding: 0.75rem; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 1rem;"
+                                   style="width: 100%; padding: 0.75rem; border: 2px solid black; border-radius: 8px; font-size: 1rem;"
                                    onkeyup="handleAdminOrderSearch(event)">
                             <button class="btn btn-secondary" onclick="adminSearchOrder()" style="margin-top: 0.5rem; width: 100%;">Search Order</button>
                         </div>
@@ -174,6 +184,8 @@
                 </div>
             </div>
 
+           
+
             <!-- Customer Order Section -->
             <div class="content-section" id="customer-order">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
@@ -188,17 +200,10 @@
 
                 <!-- Orders View -->
                 <div id="adminOrdersView">
-                    <div id="adminOrderFilters" style="display: flex; gap: 1rem; margin-bottom: 2rem; flex-wrap: wrap;">
-                        <button class="filter-btn active" data-status="" onclick="adminFilterOrders('')">All</button>
-                        <button class="filter-btn" data-status="pending" onclick="adminFilterOrders('pending')">Pending</button>
-                        <button class="filter-btn" data-status="preparing" onclick="adminFilterOrders('preparing')">Preparing</button>
-                        <button class="filter-btn" data-status="ready" onclick="adminFilterOrders('ready')">Ready</button>
-                        <button class="filter-btn" data-status="completed" onclick="adminFilterOrders('completed')">Completed</button>
-                    </div>
                     <div style="display: flex; gap: 1rem; align-items: center; margin-bottom: 2rem; flex-wrap: wrap;">
                         <div style="min-width: 250px;">
                             <input type="text" id="adminOrderSearchInput2" placeholder="Search by Order Number (e.g., 1234)"
-                                   style="width: 100%; padding: 0.75rem; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 1rem;"
+                                   style="width: 100%; padding: 0.75rem; border: 2px solid black; border-radius: 8px; font-size: 1rem;"
                                    onkeyup="adminHandleOrderSearch2(event)">
                             <button class="btn btn-secondary" onclick="adminSearchOrder2()" style="margin-top: 0.5rem; width: 100%;">Search Order</button>
                         </div>
@@ -212,8 +217,13 @@
                                 <input type="date" id="exportToDate" style="padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px;">
                             </div>
                             <div style="display: flex; align-items: flex-end;">
-                                <button class="btn btn-success" onclick="exportOrdersToCSV()" style="padding: 0.5rem 1rem;">
+                                <button class="btn btn-success" onclick="exportOrdersToCSV()" style="padding: 0.5rem 1rem; border: 2px solid green;">
                                     📊 Export CSV
+                                </button> 
+                            </div>
+                            <div style="display: flex; align-items: flex-end;">
+                                <button class="btn btn-danger" onclick="adminDeleteAllOrdersWithConfirmation()" style="padding: 0.5rem 1rem;">
+                                    Del All Orders
                                 </button>
                             </div>
                         </div>
@@ -240,16 +250,10 @@
                 <!-- Menu View -->
 
             <!-- Asking for Categoriess and Food Types-->
-                <div id="adminMenuView">
-                    <div class="order-filters" style="margin-bottom: 2rem;">
-                        <div style="margin-bottom: 1rem;">
-                            <h4 style="margin-bottom: 0.5rem; color: #333;">Categories</h4>
-                            <button class="filter-btn active" data-category="" onclick="filterAdminMenu('')">All Categories</button>
-                            <button class="filter-btn" data-category="starter" onclick="filterAdminMenu('starter')">Starters</button>
-                            <button class="filter-btn" data-category="main" onclick="filterAdminMenu('main')">Main Course</button>
-                            <button class="filter-btn" data-category="dessert" onclick="filterAdminMenu('dessert')">Desserts</button>
-                            <button class="filter-btn" data-category="beverage" onclick="filterAdminMenu('beverage')">Beverages</button>
-                        </div>
+                <div id="adminMenuView" style="display: none;">
+                    <div class="order-filters" style="margin-bottom: 2rem;" id="adminCategoryFilters">
+                        <button class="filter-btn active" data-category="" onclick="filterAdminMenu('')">All</button>
+                        <!-- Categories will be loaded dynamically -->
                     </div>
                     <div class="menu-grid" id="adminMenuGrid">
                         <p style="text-align: center; color: #666;">Loading menu...</p>
@@ -296,6 +300,9 @@
             </div>
         </div>
     </div>
+
+    <!-- Sidebar Overlay -->
+    <div class="sidebar-overlay" onclick="toggleSidebar()"></div>
 
     <!-- Add/Edit Menu Item Modal -->
     <div class="modal" id="menuItemModal">
@@ -419,7 +426,6 @@
                     <label>Role</label>
                     <select id="editUserRole" required>
                         <option value="staff">Staff</option>
-                        <option value="manager">Manager</option>
                         <option value="admin">Admin</option>
                     </select>
                 </div>
@@ -486,7 +492,7 @@
     <!-- Firebase Configuration from Backend/firebase.js -->
     <script src="../Backend/firebase.js"></script>
     <script src="script.js"></script>
-    <script src="admin.js"></script>
+    <script src="admin.js" defer></script>
     <script src="admin-revenue.js"></script>
 
 </body>

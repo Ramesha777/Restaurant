@@ -1,0 +1,27 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Publicly readable menu images only under /menu_images/{imageId}
+    match /menu_images/{imageId} {
+      allow read: if true;
+      // Allow create with validations: authenticated, image MIME, size under 5MB
+      allow create: if request.auth != null
+                    && request.resource.size < 5 * 1024 * 1024
+                    && request.resource.contentType.matches('image/.*');
+      // Updates and deletes reserved for admins
+      allow update, delete: if request.auth != null && request.auth.token.admin == true;
+    }
+
+    // User-specific private storage (e.g., user uploads)
+    match /user_uploads/{userId}/{allPaths=**} {
+      allow read: if request.auth != null && request.auth.uid == userId;
+      allow create: if request.auth != null && request.auth.uid == userId
+                    && request.resource.size < 10 * 1024 * 1024
+                    && request.resource.contentType.matches('image/.*|application/pdf');
+      // Allow update/delete by owner or admin
+      allow update, delete: if request.auth != null && (request.auth.uid == userId || request.auth.token.admin == true);
+    }
+
+    // Deny anything else by default
+  }
+}

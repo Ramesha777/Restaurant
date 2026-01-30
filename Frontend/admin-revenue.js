@@ -1,4 +1,4 @@
-// Admin Revenue Management Functions
+//// Admin Revenue Management Functions
 // Handles daily revenue calculation and reset functionality
 
 // Calculate today's revenue based on last reset time or midnight
@@ -456,3 +456,20 @@ async function adminUpdateDiscountType(orderId, discountType) {
 }
 
 
+// adding remove function for categories and food types added from admin panel
+function removeCategory(index) {
+    const categoriesContainer = document.getElementById('adminCategoriesContainer');
+    if (!categoriesContainer) return;
+    const categoryItems = categoriesContainer.getElementsByClassName('category-item');
+    if (index >= 0 && index < categoryItems.length) {
+        categoriesContainer.removeChild(categoryItems[index]);
+    }
+}
+function removeFoodType(index) {
+    const foodTypesContainer = document.getElementById('adminFoodTypesContainer');
+    if (!foodTypesContainer) return;
+    const foodTypeItems = foodTypesContainer.getElementsByClassName('food-type-item');
+    if (index >= 0 && index < foodTypeItems.length) {
+        foodTypesContainer.removeChild(foodTypeItems[index]);
+    }
+} 

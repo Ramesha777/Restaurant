@@ -64,18 +64,14 @@ async function loadMenu() {
 
 async function loadCategories() {
     try {
-        const snapshot = await firebase.firestore().collection('categories').orderBy('name').get();
-        availableCategories = snapshot.docs.map(doc => doc.data().name);
+        firebase.firestore().collection('categories').orderBy('name').onSnapshot(snapshot => {
+            availableCategories = snapshot.docs.map(doc => doc.data().name);
 
-        // Add default categories if none exist
-        if (availableCategories.length === 0) {
-            availableCategories = ['starter', 'main', 'dessert', 'beverage'];
-        }
-
-        renderFilters();
-    } catch (error) {
+            renderFilters();
+        });
+    } 
+    catch (error) {
         console.error('Error loading categories:', error);
-        availableCategories = ['starter', 'main', 'dessert', 'beverage'];
         renderFilters();
     }
 }

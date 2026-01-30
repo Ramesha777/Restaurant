@@ -1,0 +1,88 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // --- Helper Functions ---
+    
+    // Check if user is signed in
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    // Fetch the current user's document to check roles
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+    
+    // Check if the user has a specific role
+    function hasRole(role) {
+      return isAuthenticated() && getUserData().role == role;
+    }
+    
+    // Check if user is an Admin
+    function isAdmin() {
+      return hasRole('admin');
+    }
+    
+    // Check if user is Staff (Staff, Manager, or Admin)
+    function isStaff() {
+      return isAuthenticated() && (
+        getUserData().role == 'staff' || 
+        getUserData().role == 'manager' || 
+        getUserData().role == 'admin'
+      );
+    }
+
+    // --- Collection Rules ---
+
+    // Users Collection
+    match /users/{userId} {
+      // Users can read their own profile; Admins can read all (for User Management)
+      allow read: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
+      // Only Admins can create or update user roles
+      allow write: if isAdmin();
+    }
+
+    // Menu, Categories, FoodTypes (Public Read, Admin Write)
+    match /menu/{document=**} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    match /categories/{document=**} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    match /foodTypes/{document=**} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Orders Collection
+    match /orders/{orderId} {
+      // Validate create: ensure required keys and basic types to prevent malformed orders
+      allow create: if request.resource.data.keys().hasAll(['items','total','status','createdAt'])
+                    && request.resource.data.status == 'pending'
+                    && request.resource.data.total is number
+                    && request.resource.data.total > 0
+                    && request.resource.data.items is list
+                    && request.resource.data.createdAt is timestamp;
+
+      // Staff can read all orders; customers can read their own orders when authenticated
+      allow read: if isStaff() || (isAuthenticated() && resource.data.userId == request.auth.uid);
+
+      // Staff can update orders (status/payment); allow creator to update their own order where appropriate
+      allow update: if isStaff() || (isAuthenticated() && resource.data.userId == request.auth.uid);
+
+      // Only Admins can delete orders
+      allow delete: if isAdmin();
+    }
+
+    // Settings (Revenue, etc.) and Inventory
+    match /settings/{document=**} {
+      allow read, write: if isAdmin();
+    }
+    match /inventory/{document=**} {
+      allow read, write: if isStaff();
+    }
+  }
+}
