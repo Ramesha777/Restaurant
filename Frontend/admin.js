@@ -59,7 +59,9 @@ async function initializeDashboard() {
             document.getElementById(section).classList.add('active');
 
             // Load data for the section
-            if (section === 'menu') loadMenuItems();
+            if (section === 'menu') {
+                loadMenuItems();
+            }
             else if (section === 'orders') loadOrders();
             else if (section === 'users') loadUsers();
             else if (section === 'overview') loadOverview();
@@ -487,15 +489,15 @@ async function deleteUser(userId) {
 }
 
 function openAddMenuItemModal() {
+    console.log('Opening add menu item modal');
     currentEditingItemId = null;
     document.getElementById('modalTitle').textContent = 'Add Menu Item';
     document.getElementById('menuItemForm').reset();
     updateCategorySelect();
     updateFoodTypeSelect();
-    document.getElementById('imagePreview').style.display = 'none';
     document.getElementById('itemImage').value = '';
-    document.getElementById('itemImageFile').value = '';
     document.getElementById('menuItemModal').classList.add('active');
+    console.log('Modal should be active now');
 }
 
 function closeMenuItemModal() {
@@ -519,13 +521,6 @@ async function editMenuItem(id) {
         document.getElementById('itemAvailable').value = item.available !== false ? 'true' : 'false';
         document.getElementById('itemSpicyLevel').value = item.spicyLevel || 'not needed';
 
-        // Show existing image if any
-        if (item.image) {
-            document.getElementById('previewImg').src = item.image;
-            document.getElementById('imagePreview').style.display = 'block';
-        } else {
-            document.getElementById('imagePreview').style.display = 'none';
-        }
 
         updateCategorySelect();
         updateFoodTypeSelect();
@@ -551,18 +546,7 @@ document.getElementById('menuItemForm').addEventListener('submit', async (e) => 
     e.preventDefault();
 
     try {
-        let imageUrl = document.getElementById('itemImage').value;
-
-        // If a file is selected, upload it to Firebase Storage
-        const fileInput = document.getElementById('itemImageFile');
-        if (fileInput.files && fileInput.files[0]) {
-            const file = fileInput.files[0];
-            const storageRef = firebase.storage().ref();
-            const imageRef = storageRef.child(`menu_images/${Date.now()}_${file.name}`);
-            
-            const snapshot = await imageRef.put(file);
-            imageUrl = await snapshot.ref.getDownloadURL();
-        }
+        const imageUrl = document.getElementById('itemImage').value;
 
         const itemData = {
             name: document.getElementById('itemName').value,
@@ -2161,28 +2145,6 @@ async function exportOrdersToCSV() {
         console.error('Error exporting orders:', error);
         showNotification('Error exporting orders. Please try again.', 'error');
     }
-}
-
-// Image upload functions
-function previewImage() {
-    const fileInput = document.getElementById('itemImageFile');
-    const preview = document.getElementById('imagePreview');
-    const previewImg = document.getElementById('previewImg');
-
-    if (fileInput.files && fileInput.files[0]) {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            previewImg.src = e.target.result;
-            preview.style.display = 'block';
-        };
-        reader.readAsDataURL(fileInput.files[0]);
-    }
-}
-
-function removeImage() {
-    document.getElementById('itemImageFile').value = '';
-    document.getElementById('itemImage').value = '';
-    document.getElementById('imagePreview').style.display = 'none';
 }
 
 // Toggle sidebar for mobile devices
