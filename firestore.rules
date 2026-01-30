@@ -59,8 +59,11 @@ service cloud.firestore {
 
     // Orders Collection
     match /orders/{orderId} {
-      // Validate create: ensure required keys and basic types to prevent malformed orders
-      allow create: if request.resource.data.keys().hasAll(['items','total','status','createdAt'])
+      // Validate create: ensure required keys, ownership and basic types to prevent malformed orders
+      allow create: if isAuthenticated()
+                    && request.resource.data.keys().hasAll(['items','total','status','createdAt','userId'])
+                    && request.resource.data.userId is string
+                    && request.resource.data.userId == request.auth.uid
                     && request.resource.data.status == 'pending'
                     && request.resource.data.total is number
                     && request.resource.data.total > 0
@@ -70,8 +73,17 @@ service cloud.firestore {
       // Staff can read all orders; customers can read their own orders when authenticated
       allow read: if isStaff() || (isAuthenticated() && resource.data.userId == request.auth.uid);
 
-      // Staff can update orders (status/payment); allow creator to update their own order where appropriate
-      allow update: if isStaff() || (isAuthenticated() && resource.data.userId == request.auth.uid);
+      // Staff can update orders (status/payment); creators can update only permitted fields and may not change sensitive fields
+      allow update: if isStaff()
+                    || (
+                        isAuthenticated()
+                        && resource.data.userId == request.auth.uid
+                        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['items','notes','tableNumber','updatedAt'])
+                        // Ensure sensitive fields are not changed
+                        && request.resource.data.userId == resource.data.userId
+                        && request.resource.data.total == resource.data.total
+                        && request.resource.data.status == resource.data.status
+                    );
 
       // Only Admins can delete orders
       allow delete: if isAdmin();

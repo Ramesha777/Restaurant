@@ -457,19 +457,68 @@ async function adminUpdateDiscountType(orderId, discountType) {
 
 
 // adding remove function for categories and food types added from admin panel
-function removeCategory(index) {
+async function removeCategory(index) {
     const categoriesContainer = document.getElementById('adminCategoriesContainer');
     if (!categoriesContainer) return;
     const categoryItems = categoriesContainer.getElementsByClassName('category-item');
-    if (index >= 0 && index < categoryItems.length) {
-        categoriesContainer.removeChild(categoryItems[index]);
+    if (index < 0 || index >= categoryItems.length) return;
+
+    const targetEl = categoryItems[index];
+    const categoryId = targetEl && (targetEl.dataset?.categoryId || targetEl.getAttribute('data-category-id'));
+
+    if (!confirm('Are you sure you want to permanently delete this category? This action cannot be undone.')) {
+        return;
+    }
+
+    if (!categoryId) {
+        console.error('Category ID not found on element:', targetEl);
+        showNotification('Category ID not found. Cannot remove category.', 'error');
+        return;
+    }
+
+    try {
+        await firebase.firestore().collection('categories').doc(categoryId).delete();
+        try {
+            categoriesContainer.removeChild(targetEl);
+        } catch (domErr) {
+            console.error('Error removing category node from DOM:', domErr);
+        }
+        showNotification('Category removed successfully', 'success');
+    } catch (error) {
+        console.error('Error removing category:', error);
+        showNotification('Error removing category. Please try again. ' + (error.message || ''), 'error');
     }
 }
-function removeFoodType(index) {
+
+async function removeFoodType(index) {
     const foodTypesContainer = document.getElementById('adminFoodTypesContainer');
     if (!foodTypesContainer) return;
     const foodTypeItems = foodTypesContainer.getElementsByClassName('food-type-item');
-    if (index >= 0 && index < foodTypeItems.length) {
-        foodTypesContainer.removeChild(foodTypeItems[index]);
+    if (index < 0 || index >= foodTypeItems.length) return;
+
+    const targetEl = foodTypeItems[index];
+    const foodTypeId = targetEl && (targetEl.dataset?.foodTypeId || targetEl.getAttribute('data-food-type-id'));
+
+    if (!confirm('Are you sure you want to permanently delete this food type? This action cannot be undone.')) {
+        return;
+    }
+
+    if (!foodTypeId) {
+        console.error('Food type ID not found on element:', targetEl);
+        showNotification('Food type ID not found. Cannot remove food type.', 'error');
+        return;
+    }
+
+    try {
+        await firebase.firestore().collection('foodTypes').doc(foodTypeId).delete();
+        try {
+            foodTypesContainer.removeChild(targetEl);
+        } catch (domErr) {
+            console.error('Error removing food type node from DOM:', domErr);
+        }
+        showNotification('Food type removed successfully', 'success');
+    } catch (error) {
+        console.error('Error removing food type:', error);
+        showNotification('Error removing food type. Please try again. ' + (error.message || ''), 'error');
     }
 } 

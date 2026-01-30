@@ -167,12 +167,15 @@ async function loadFoodTypes() {
 
 // Load both categories and food types and update related UI
 async function loadCategoriesAndFoodTypes() {
-    await Promise.all([loadCategories(), loadFoodTypes()]);
     try {
+        await Promise.all([loadCategories(), loadFoodTypes()]);
         updateAdminCategoryFilters();
         updateAdminFoodTypeFilters();
     } catch (e) {
-        console.error('Error updating category/foodtype filters:', e);
+        console.error('Error loading categories/food types:', e);
+        if (typeof showNotification === 'function') {
+            showNotification('Error loading categories or food types', 'error');
+        }
     }
 }
 
@@ -191,8 +194,36 @@ function updateFoodTypeSelect() {
 
 function updateAdminFoodTypeFilters() {
     const container = document.getElementById('adminFoodTypeFilters');
-    if (container) {
-        container.innerHTML = '';
+    if (!container) return;
+
+    container.innerHTML = '';
+
+    const allBtn = document.createElement('button');
+    allBtn.className = 'filter-btn active';
+    allBtn.dataset.foodType = '';
+    allBtn.textContent = 'All Food Types';
+    container.appendChild(allBtn);
+
+    availableFoodTypes.forEach(type => {
+        const btn = document.createElement('button');
+        btn.className = 'filter-btn';
+        btn.dataset.foodType = type;
+        btn.textContent = type.charAt(0).toUpperCase() + type.slice(1);
+        container.appendChild(btn);
+    });
+
+    if (!container.dataset.listenerAttached) {
+        container.addEventListener('click', (e) => {
+            const btn = e.target.closest('button[data-food-type]');
+            if (!btn) return;
+            const foodType = btn.dataset.foodType || '';
+
+            container.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+
+            filterByFoodType(foodType);
+        });
+        container.dataset.listenerAttached = 'true';
     }
 }
 
@@ -200,13 +231,41 @@ function updateAdminCategoryFilters() {
     const container = document.getElementById('adminCategoryFilters');
     if (!container) return;
 
-    let filterHtml = '<button class="filter-btn active" data-category="" onclick="filterAdminMenu(\'\')">All Categories</button>';
+    // Clear existing
+    container.innerHTML = '';
 
+    // Create "All Categories" button
+    const allBtn = document.createElement('button');
+    allBtn.className = 'filter-btn active';
+    allBtn.dataset.category = '';
+    allBtn.textContent = 'All Categories';
+    container.appendChild(allBtn);
+
+    // Create buttons from availableCategories safely
     availableCategories.forEach(category => {
-        filterHtml += `<button class="filter-btn" data-category="${category}" onclick="filterAdminMenu('${category}')">${category.charAt(0).toUpperCase() + category.slice(1)}</button>`;
+        const btn = document.createElement('button');
+        btn.className = 'filter-btn';
+        btn.dataset.category = category;
+        btn.textContent = category.charAt(0).toUpperCase() + category.slice(1);
+        container.appendChild(btn);
     });
 
-    container.innerHTML = filterHtml;
+    // Attach single delegation handler (only once)
+    if (!container.dataset.listenerAttached) {
+        container.addEventListener('click', (e) => {
+            const btn = e.target.closest('button[data-category]');
+            if (!btn) return;
+            const category = btn.dataset.category || '';
+
+            // Update active class
+            container.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+
+            // Call existing filter function
+            filterAdminMenu(category);
+        });
+        container.dataset.listenerAttached = 'true';
+    }
 }
 
 function addNewCategory() {
@@ -860,6 +919,8 @@ async function loadAdminMenu() {
         adminMenuItems.sort((a, b) => (a.category || '').localeCompare(b.category || ''));
 
         renderAdminMenu();
+        updateAdminCategoryFilters();
+        updateAdminFoodTypeFilters();
     } catch (error) {
         console.error('Error loading menu:', error);
         showNotification('Error loading menu', 'error');
@@ -1489,9 +1550,7 @@ function adminDisplayOrderDetails2(order) {
                 <button class="btn btn-secondary" onclick="adminOpenEditOrderModal('${order.id}')">
                     Edit Order Details
                 </button>
-                <button class="btn btn-secondary" onclick="adminAddItemToOrder('${order.id}')">
-                    Add Item
-                </button>
+
                 <button class="btn btn-danger" onclick="adminDeleteOrder('${order.id}')">
                     🗑️ Delete Order
                 </button>
@@ -2083,6 +2142,7 @@ async function exportOrdersToCSV() {
 function toggleSidebar() {
     const sidebar = document.querySelector('.sidebar');
     const overlay = document.querySelector('.sidebar-overlay');
+    const hamburger = document.querySelector('.hamburger-btn');
 
     if (sidebar) {
         sidebar.classList.toggle('sidebar-open');
@@ -2093,6 +2153,12 @@ function toggleSidebar() {
     if (overlay) {
         overlay.classList.toggle('active');
     }
+
+    // Update accessibility state on hamburger button
+    if (hamburger) {
+        const expanded = hamburger.getAttribute('aria-expanded') === 'true';
+        hamburger.setAttribute('aria-expanded', (!expanded).toString());
+    }
 }
 
 function setupMobileResponsiveness() {
@@ -2102,6 +2168,8 @@ function setupMobileResponsiveness() {
         btn.className = 'hamburger-btn';
         btn.innerHTML = '☰';
         btn.onclick = toggleSidebar;
+        btn.setAttribute('aria-label', 'Toggle sidebar');
+        btn.setAttribute('aria-expanded', 'false');
         document.body.appendChild(btn);
     }
     
@@ -2123,12 +2191,14 @@ function setupMobileResponsiveness() {
         sidebar.insertBefore(closeBtn, sidebar.firstChild);
     }
     
-    // Close sidebar when clicking menu items on mobile
+    // Close sidebar when clicking menu items on mobile; avoid attaching duplicate listeners
     document.querySelectorAll('.sidebar-menu li').forEach(item => {
+        if (item.dataset && item.dataset.mobileListener) return;
         item.addEventListener('click', () => {
             if (window.innerWidth <= 768) {
                 toggleSidebar();
             }
         });
+        item.dataset.mobileListener = 'true';
     });
 } 

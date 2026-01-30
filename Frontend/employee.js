@@ -3,15 +3,36 @@ let ordersUnsubscribe = null;
 let currentEmployeeName = '';
 let availableCategories = [];
 
-async function loadCategories() {
-    try {
-        firebase.firestore().collection('categories').orderBy('name').onSnapshot(snapshot => {
-            availableCategories = snapshot.docs.map(doc => doc.data().name);
-            updateEmployeeCategoryFilters();
-        });
-    } catch (error) {
-        console.error('Error loading categories:', error);
-    }
+let categoriesUnsubscribe = null;
+
+function loadCategories() {
+    return new Promise((resolve, reject) => {
+        try {
+            let resolved = false;
+            categoriesUnsubscribe = firebase.firestore().collection('categories').orderBy('name').onSnapshot(snapshot => {
+                availableCategories = snapshot.docs.map(doc => doc.data().name);
+                updateEmployeeCategoryFilters();
+                if (!resolved) {
+                    resolved = true;
+                    resolve();
+                }
+            }, error => {
+                console.error('Error loading categories:', error);
+                showNotification && showNotification('Error loading categories', 'error');
+                if (!resolved) {
+                    resolved = true;
+                    reject(error);
+                }
+            });
+
+            window.addEventListener('beforeunload', () => {
+                if (categoriesUnsubscribe) categoriesUnsubscribe();
+            });
+        } catch (err) {
+            console.error('Error initiating categories listener:', err);
+            reject(err);
+        }
+    });
 }
 
 // Check authentication and role - Wait for Firebase to be ready

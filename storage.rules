@@ -8,8 +8,11 @@ service firebase.storage {
       allow create: if request.auth != null
                     && request.resource.size < 5 * 1024 * 1024
                     && request.resource.contentType.matches('image/.*');
-      // Updates and deletes reserved for admins
-      allow update, delete: if request.auth != null && request.auth.token.admin == true;
+      // Updates reserved for admins and validated like create; deletes still require admin
+      allow update: if request.auth != null && request.auth.token.admin == true
+                    && request.resource.size < 5 * 1024 * 1024
+                    && request.resource.contentType.matches('image/.*');
+      allow delete: if request.auth != null && request.auth.token.admin == true;
     }
 
     // User-specific private storage (e.g., user uploads)
@@ -18,8 +21,11 @@ service firebase.storage {
       allow create: if request.auth != null && request.auth.uid == userId
                     && request.resource.size < 10 * 1024 * 1024
                     && request.resource.contentType.matches('image/.*|application/pdf');
-      // Allow update/delete by owner or admin
-      allow update, delete: if request.auth != null && (request.auth.uid == userId || request.auth.token.admin == true);
+      // Allow update by owner or admin only if incoming file meets size/type checks; delete preserved for owner/admin
+      allow update: if request.auth != null && (request.auth.uid == userId || request.auth.token.admin == true)
+                    && request.resource.size < 10 * 1024 * 1024
+                    && request.resource.contentType.matches('image/.*|application/pdf');
+      allow delete: if request.auth != null && (request.auth.uid == userId || request.auth.token.admin == true);
     }
 
     // Deny anything else by default

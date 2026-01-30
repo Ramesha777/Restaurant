@@ -62,16 +62,24 @@ async function loadMenu() {
     }
 }
 
-async function loadCategories() {
-    try {
-        firebase.firestore().collection('categories').orderBy('name').onSnapshot(snapshot => {
-            availableCategories = snapshot.docs.map(doc => doc.data().name);
+let categoriesUnsubscribe = null;
 
+function loadCategories() {
+    try {
+        const collectionRef = firebase.firestore().collection('categories').orderBy('name');
+        categoriesUnsubscribe = collectionRef.onSnapshot(snapshot => {
+            availableCategories = snapshot.docs.map(doc => doc.data().name);
+            renderFilters();
+        }, error => {
+            console.error('Error loading categories:', error);
             renderFilters();
         });
-    } 
-    catch (error) {
-        console.error('Error loading categories:', error);
+
+        window.addEventListener('beforeunload', () => {
+            if (categoriesUnsubscribe) categoriesUnsubscribe();
+        });
+    } catch (error) {
+        console.error('Error setting up categories listener:', error);
         renderFilters();
     }
 }
