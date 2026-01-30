@@ -492,6 +492,9 @@ function openAddMenuItemModal() {
     document.getElementById('menuItemForm').reset();
     updateCategorySelect();
     updateFoodTypeSelect();
+    document.getElementById('imagePreview').style.display = 'none';
+    document.getElementById('itemImage').value = '';
+    document.getElementById('itemImageFile').value = '';
     document.getElementById('menuItemModal').classList.add('active');
 }
 
@@ -516,6 +519,14 @@ async function editMenuItem(id) {
         document.getElementById('itemAvailable').value = item.available !== false ? 'true' : 'false';
         document.getElementById('itemSpicyLevel').value = item.spicyLevel || 'not needed';
 
+        // Show existing image if any
+        if (item.image) {
+            document.getElementById('previewImg').src = item.image;
+            document.getElementById('imagePreview').style.display = 'block';
+        } else {
+            document.getElementById('imagePreview').style.display = 'none';
+        }
+
         updateCategorySelect();
         updateFoodTypeSelect();
         document.getElementById('menuItemModal').classList.add('active');
@@ -539,19 +550,32 @@ async function deleteMenuItem(id) {
 document.getElementById('menuItemForm').addEventListener('submit', async (e) => {
     e.preventDefault();
 
-    const itemData = {
-        name: document.getElementById('itemName').value,
-        description: document.getElementById('itemDescription').value,
-        category: document.getElementById('itemCategory').value,
-        foodType: document.getElementById('itemFoodType').value,
-        price: parseFloat(document.getElementById('itemPrice').value),
-        spicyLevel: document.getElementById('itemSpicyLevel').value,
-        image: document.getElementById('itemImage').value,
-        available: document.getElementById('itemAvailable').value === 'true',
-        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-    };
-
     try {
+        let imageUrl = document.getElementById('itemImage').value;
+
+        // If a file is selected, upload it to Firebase Storage
+        const fileInput = document.getElementById('itemImageFile');
+        if (fileInput.files && fileInput.files[0]) {
+            const file = fileInput.files[0];
+            const storageRef = firebase.storage().ref();
+            const imageRef = storageRef.child(`menu_images/${Date.now()}_${file.name}`);
+            
+            const snapshot = await imageRef.put(file);
+            imageUrl = await snapshot.ref.getDownloadURL();
+        }
+
+        const itemData = {
+            name: document.getElementById('itemName').value,
+            description: document.getElementById('itemDescription').value,
+            category: document.getElementById('itemCategory').value,
+            foodType: document.getElementById('itemFoodType').value,
+            price: parseFloat(document.getElementById('itemPrice').value),
+            spicyLevel: document.getElementById('itemSpicyLevel').value,
+            image: imageUrl,
+            available: document.getElementById('itemAvailable').value === 'true',
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        };
+
         if (currentEditingItemId) {
             await firebase.firestore().collection('menu').doc(currentEditingItemId).update(itemData);
             showNotification('Menu item updated successfully', 'success');
@@ -564,6 +588,7 @@ document.getElementById('menuItemForm').addEventListener('submit', async (e) => 
         closeMenuItemModal();
         loadMenuItems();
     } catch (error) {
+        console.error('Error saving menu item:', error);
         showNotification('Error saving menu item', 'error');
     }
 });
@@ -2136,6 +2161,28 @@ async function exportOrdersToCSV() {
         console.error('Error exporting orders:', error);
         showNotification('Error exporting orders. Please try again.', 'error');
     }
+}
+
+// Image upload functions
+function previewImage() {
+    const fileInput = document.getElementById('itemImageFile');
+    const preview = document.getElementById('imagePreview');
+    const previewImg = document.getElementById('previewImg');
+
+    if (fileInput.files && fileInput.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            previewImg.src = e.target.result;
+            preview.style.display = 'block';
+        };
+        reader.readAsDataURL(fileInput.files[0]);
+    }
+}
+
+function removeImage() {
+    document.getElementById('itemImageFile').value = '';
+    document.getElementById('itemImage').value = '';
+    document.getElementById('imagePreview').style.display = 'none';
 }
 
 // Toggle sidebar for mobile devices

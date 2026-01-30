@@ -1,9 +1,11 @@
-# Admin Page Responsiveness Task
+# TODO: Implement Kitchen Bill and Customer Bill in Employee Page
 
-## Task: Make admin page responsive for small devices by adding a hamburger menu button to toggle the sidebar.
+## Tasks
+- [x] Add printCustomerBill function to employee.js (similar to adminPrintBill)
+- [x] Modify displayOrderDetails to show both Kitchen Bill and Customer Bill buttons side by side
+- [x] Test bill printing functionality
 
-### Steps:
-- [x] Add hamburger menu button (three lines) in the header of admin.html for small devices.
-- [x] Update admin.css to hide sidebar by default on small screens (max-width: 768px) and style the hamburger button.
-- [x] Add toggle functionality in admin.js to show/hide the sidebar when hamburger button is clicked.
-- [ ] Test the responsiveness on small devices.
+## Status
+- Plan approved by user
+- Implementation completed successfully
+- Both Kitchen Bill (simple, for kitchen use) and Customer Bill (full bill with prices) are now available in employee.js

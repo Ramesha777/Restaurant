@@ -1000,9 +1000,14 @@ function displayOrderDetails(order) {
                 <div style="margin-top: 1rem; padding: 1rem; background: #e8f5e9; border-radius: 8px;">
                     <p><strong>Confirmed by:</strong> ${confirmedBy}</p>
                     <p><strong>Confirmed at:</strong> ${order.paymentConfirmedAt ? formatDate(order.paymentConfirmedAt) : 'N/A'}</p>
-                    <button class="btn btn-success" onclick="printBill('${order.id}')" style="margin-top: 1rem;">
-                        🖨️ Print Bill
-                    </button>
+                    <div style="display: flex; gap: 1rem; margin-top: 1rem;">
+                        <button class="btn btn-success" onclick="printBill('${order.id}')">
+                            🖨️ Kitchen Bill
+                        </button>
+                        <button class="btn btn-primary" onclick="printCustomerBill('${order.id}')">
+                            🧾 Customer Bill
+                        </button>
+                    </div>
                 </div>
             ` : ''}
         </div>
@@ -1071,16 +1076,143 @@ async function printBill(orderOrId) {
         order = orderOrId;
     }
 
-    // Create a printable bill
+    // Create a printable  kitchen bill
+    const billWindow = window.open('', '_blank');
+
+    // Ensure the bill shows payment confirmation date/time when available. If payment was just confirmed,
+    // fetch the latest order doc to get the server timestamp (paymentConfirmedAt).
+    if (!order.paymentConfirmedAt && order.id) {
+        try {
+            const freshDoc = await firebase.firestore().collection('orders').doc(order.id).get();
+            if (freshDoc.exists) order = { id: freshDoc.id, ...freshDoc.data() };
+        } catch (err) {
+            console.error('Error fetching latest order data for bill:', err);
+        }
+    }
+    const billDate = order.paymentConfirmedAt ? formatDate(order.paymentConfirmedAt) : (order.createdAt ? formatDate(order.createdAt) : new Date().toLocaleString());
+    const tableNumber = order.tableNumber || 'N/A';
+    let itemsHtml = '';
+    if (order.items && order.items.length > 0) {
+        itemsHtml = order.items.map(item => `
+            <tr>
+                <td style="text-align: center; font-weight: bold; font:size 40px;">${item.name}</td>
+                <td style="text-align: center; font-weight: bold; font:size 40px;">${item.quantity}</td>
+                
+            </tr>
+        `).join('');
+    }
+
+    billWindow.document.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Bill - Order #${order.orderNumber}</title>
+            <style>
+                @media print {
+                    @page { size: 80mm auto; margin: 0; }
+                    body { margin: 0; padding: 10mm; }
+                }
+                body {
+                    font-family: 'Courier New', monospace;
+                    font-size: 12px;
+                    width: 60mm;
+                    margin: 0 auto;
+                    padding: 10mm;
+                }
+                
+                .info {
+                    margin: 10px 0;
+                    line-height: 1.6;
+                }
+                table {
+                    width: 100%;
+                    border-collapse: collapse;
+                    margin: 10px 0;
+                }
+                th, td {
+                    padding: 10px;
+                    text-align: left;
+                    border-bottom: 1px dashed #ccc;
+                }
+                th {
+                    font-weight: bold;
+                    border-bottom: 2px dashed #000;
+                }
+                .footer {
+                    text-align: center;
+                    margin-top: 20px;
+                    padding-top: 10px;
+                    border-top: 2px dashed #000;
+                    font-size: 10px;
+                }
+            </style>
+        </head>
+        <body>
+
+            <div class="info">
+                <p><strong style="font-size: 25px;">Order #${order.orderNumber}</strong></p>
+                <p><strong>Table:</strong> <strong>${tableNumber}</strong></p>
+                <p><strong>Accept:</strong> ${billDate}</p>
+                ${order.notes ? `<p><strong>Notes:</strong> ${order.notes}</p>` : ''}
+            </div>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th style="text-align:left;">Item</th>
+                        <th style="text-align: left;">Qty</th>
+                        
+                    </tr>
+                </thead>
+                <tbody>
+                    ${itemsHtml}
+                </tbody>
+            </table>
+
+            
+
+            <div class="footer">
+
+                <p><strong>Confirmed by: ${currentEmployeeName || 'Staff'}</strong></p>
+            </div>
+        </body>
+        </html>
+    `);
+
+    billWindow.document.close();
+
+    // Wait for content to load, then print
+    setTimeout(() => {
+        billWindow.print();
+    }, 250);
+}
+
+async function printCustomerBill(orderOrId) {
+    let order;
+
+    // If orderOrId is a string, it's an order ID - fetch the order data
+    if (typeof orderOrId === 'string') {
+        try {
+            const orderDoc = await firebase.firestore().collection('orders').doc(orderOrId).get();
+            if (!orderDoc.exists) {
+                showNotification('Order not found', 'error');
+                return;
+            }
+            order = { id: orderDoc.id, ...orderDoc.data() };
+        } catch (error) {
+            console.error('Error fetching order:', error);
+            showNotification('Error loading order data', 'error');
+            return;
+        }
+    } else {
+        order = orderOrId;
+    }
+
+    // Create a printable bill (same as admin version)
     const billWindow = window.open('', '_blank');
     const orderDate = order.createdAt ? formatDate(order.createdAt) : new Date().toLocaleString();
     const tableNumber = order.tableNumber || 'N/A';
     const customerName = order.customerName || 'Guest';
-    const discountAmount = order.discountAmount || 0;
-    const discountType = order.discountType || 'fixed';
-    const subtotal = order.subtotal || 0;
-    const discountValue = discountType === 'percentage' ? (subtotal * discountAmount / 100) : discountAmount;
-    const total = Math.max(0, subtotal - discountValue);
 
     let itemsHtml = '';
     if (order.items && order.items.length > 0) {
@@ -1182,9 +1314,9 @@ async function printBill(orderOrId) {
             </table>
 
             <div class="total">
-                <p style="text-align: right; margin: 5px 0;"><strong>Subtotal:</strong> ${formatCurrency(subtotal)}</p>
-                ${discountValue > 0 ? `<p style="text-align: right; margin: 5px 0;"><strong>Discount:</strong> -${formatCurrency(discountValue)}</p>` : ''}
-                <p style="text-align: right; margin: 5px 0; font-size: 16px;"><strong>TOTAL:</strong> ${formatCurrency(total)}</p>
+                <p style="text-align: right; margin: 5px 0;"><strong>Subtotal:</strong> ${formatCurrency(order.subtotal || 0)}</p>
+                <p style="text-align: right; margin: 5px 0;"><strong>Tax (10%):</strong> ${formatCurrency(order.tax || 0)}</p>
+                <p style="text-align: right; margin: 5px 0; font-size: 16px;"><strong>TOTAL:</strong> ${formatCurrency(order.total || 0)}</p>
             </div>
 
             <div class="footer">
