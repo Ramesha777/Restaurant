@@ -6,6 +6,7 @@
 //    and add your production domain (e.g., your-restaurant.com).
 // 2. Go to Google Cloud Console > APIs & Services > Credentials
 //    and restrict this API Key to your specific HTTP Referrers (domains).
+
 const firebaseConfig = {
     apiKey: "AIzaSyDmGbIhwAXDxUrZDUZn_swF6uQYj-RSb7Q",
     authDomain: "restaurant-testing-3725d.firebaseapp.com",
@@ -15,6 +16,15 @@ const firebaseConfig = {
     appId: "1:926466053536:web:c01384e7165c97d21b00c5"
 };
 
+/*const firebaseConfig = {
+  apiKey: "AIzaSyDPL-D08FStmC8seOxpInlQGuJqTA2YHVA",
+  authDomain: "restaurant-transfer.firebaseapp.com",
+  projectId: "restaurant-transfer",
+  storageBucket: "restaurant-transfer.firebasestorage.app",
+  messagingSenderId: "459594736441",
+  appId: "1:459594736441:web:f2c8bda3a4472a4a163ee8"
+};
+*/
 // Initialize Firebase (if not already initialized)
 // This will run when the script is loaded, after Firebase SDK is loaded
 if (typeof firebase !== 'undefined') {

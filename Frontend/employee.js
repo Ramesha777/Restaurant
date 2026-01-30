@@ -608,60 +608,131 @@ async function employeeCheckout() {
         showNotification('Your cart is empty', 'error');
         return;
     }
-    
-    const tableNumber = document.getElementById('employeeTableNumber').value;
-    if (!tableNumber || tableNumber < 1) {
-        showNotification('Please enter a valid table number', 'error');
-        return;
-    }
-    
+
     try {
-        const subtotal = employeeCart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-        const total = subtotal;
-        const orderNumber = generateOrderNumber();
-        const notes = document.getElementById('employeeOrderNotes').value || '';
-        
-        const orderData = {
-            orderNumber: orderNumber,
-            tableNumber: parseInt(tableNumber),
-            customerName: 'Staff Order',
-            items: employeeCart.map(item => ({
-                menuItemId: item.menuItemId,
-                name: item.name,
-                price: item.price,
-                quantity: item.quantity,
-                spicyLevel: item.spicyLevel || null
-            })),
-            notes: notes,
-            subtotal,
-            total,
-            status: 'completed', // Auto-completed for employee orders
-            paymentStatus: 'confirmed', // Auto-confirmed for employee orders
-            confirmedBy: currentEmployeeName,
-            paymentConfirmedAt: firebase.firestore.FieldValue.serverTimestamp(),
-            createdAt: firebase.firestore.FieldValue.serverTimestamp()
-        };
-        
-        await firebase.firestore().collection('orders').add(orderData);
-        
-        // Clear cart and order details
-        employeeCart = [];
-        updateEmployeeCartCount();
+        // Check if we're adding items to an existing order
+        if (employeeEditingOrderId) {
+            // Add items to existing order
+            const orderRef = firebase.firestore().collection('orders').doc(employeeEditingOrderId);
+            const orderDoc = await orderRef.get();
+            const orderData = orderDoc.data();
 
-        // Clear the cart form
-        document.getElementById('employeeTableNumber').value = '';
-        document.getElementById('employeeOrderNotes').value = '';
+            const existingItems = orderData.items || [];
 
-        showNotification(`Order #${orderNumber} placed and confirmed successfully!`, 'success');
-        showEmployeeMenu();
+            // Add new items to existing items
+            let updatedItems = [...existingItems];
 
-        // Reload orders
-        if (document.getElementById('ordersView').style.display !== 'none') {
+            employeeCart.forEach(newItem => {
+                const existingItemIndex = updatedItems.findIndex(item => item.menuItemId === newItem.menuItemId && item.spicyLevel === newItem.spicyLevel);
+
+                if (existingItemIndex >= 0) {
+                    // Update existing item quantity
+                    updatedItems[existingItemIndex].quantity += newItem.quantity;
+                } else {
+                    // Add new item
+                    updatedItems.push({
+                        menuItemId: newItem.menuItemId,
+                        name: newItem.name,
+                        price: newItem.price,
+                        quantity: newItem.quantity,
+                        spicyLevel: newItem.spicyLevel || null
+                    });
+                }
+            });
+
+            // Recalculate totals
+            const subtotal = updatedItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+            const discountAmount = orderData.discountAmount || 0;
+            const discountType = orderData.discountType || 'fixed';
+            const discountValue = discountType === 'percentage' ? (subtotal * discountAmount / 100) : discountAmount;
+            const total = Math.max(0, subtotal - discountValue);
+
+            await orderRef.update({
+                items: updatedItems,
+                subtotal,
+                total
+            });
+
+            // Clear cart
+            employeeCart = [];
+            updateEmployeeCartCount();
+
+            // Reset editing state
+            employeeEditingOrderId = null;
+
+            showNotification('Items added to order successfully!', 'success');
+
+            // Switch back to orders view
+            document.getElementById('ordersView').style.display = 'block';
+            document.getElementById('orderFilters').style.display = 'flex';
+            document.getElementById('customerOrderView').style.display = 'none';
+
+            // Refresh order details if currently viewing this order
+            if (searchedOrder && searchedOrder.id === employeeEditingOrderId) {
+                searchedOrder.items = updatedItems;
+                searchedOrder.subtotal = subtotal;
+                searchedOrder.total = total;
+                displayOrderDetails(searchedOrder);
+            }
+
+            // Reload orders
             loadOrders();
+
+        } else {
+            // Create new order
+            const tableNumber = document.getElementById('employeeTableNumber').value;
+            if (!tableNumber || tableNumber < 1) {
+                showNotification('Please enter a valid table number', 'error');
+                return;
+            }
+
+            const subtotal = employeeCart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+            const total = subtotal;
+            const orderNumber = generateOrderNumber();
+            const notes = document.getElementById('employeeOrderNotes').value || '';
+
+            const orderData = {
+                orderNumber: orderNumber,
+                tableNumber: parseInt(tableNumber),
+                customerName: 'Staff Order',
+                items: employeeCart.map(item => ({
+                    menuItemId: item.menuItemId,
+                    name: item.name,
+                    price: item.price,
+                    quantity: item.quantity,
+                    spicyLevel: item.spicyLevel || null
+                })),
+                notes: notes,
+                subtotal,
+                total,
+                status: 'completed', // Auto-completed for employee orders
+                paymentStatus: 'confirmed', // Auto-confirmed for employee orders
+                confirmedBy: currentEmployeeName,
+                paymentConfirmedAt: firebase.firestore.FieldValue.serverTimestamp(),
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            };
+
+            await firebase.firestore().collection('orders').add(orderData);
+
+            // Clear cart and order details
+            employeeCart = [];
+            updateEmployeeCartCount();
+
+            // Clear the cart form
+            document.getElementById('employeeTableNumber').value = '';
+            document.getElementById('employeeOrderNotes').value = '';
+
+            showNotification(`Order #${orderNumber} placed and confirmed successfully!`, 'success');
+            showEmployeeMenu();
+
+            // Reload orders
+            if (document.getElementById('ordersView').style.display !== 'none') {
+                loadOrders();
+            }
         }
     } catch (error) {
-        console.error('Error placing order:', error);
-        showNotification('Error placing order. Please try again.', 'error');
+        console.error('Error processing order:', error);
+        showNotification('Error processing order. Please try again.', 'error');
     }
 }
 
@@ -1193,89 +1264,42 @@ async function updateOrderItem(orderId, itemName, newQuantity, itemPrice) {
     }
 }
 
+let employeeEditingOrderId = null; // Store the order ID being edited for adding items
+
 async function addItemToOrder(orderId) {
-    // Load menu items for selection
     try {
-        const menuSnapshot = await firebase.firestore().collection('menu').where('available', '==', true).get();
-        const menuItems = menuSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        
-        if (menuItems.length === 0) {
-            showNotification('No available menu items', 'error');
-            return;
-        }
-        
-        let menuOptions = menuItems.map((item, index) => `${index + 1}. ${item.name} - ${formatCurrency(item.price)}`).join('\n');
-        const selection = prompt(`Select an item to add:\n\n${menuOptions}\n\nEnter item number:`, '1');
-        
-        if (selection === null) return;
-        
-        const itemIndex = parseInt(selection) - 1;
-        if (isNaN(itemIndex) || itemIndex < 0 || itemIndex >= menuItems.length) {
-            showNotification('Invalid selection', 'error');
-            return;
-        }
-        
-        const selectedItem = menuItems[itemIndex];
-        const quantity = parseInt(prompt(`Enter quantity for "${selectedItem.name}":`, '1'));
-        
-        if (isNaN(quantity) || quantity < 1) {
-            showNotification('Invalid quantity', 'error');
-            return;
-        }
-        
-        // Add item to order
+        // Store the order ID for later use
+        employeeEditingOrderId = orderId;
+
+        // Get order data to pre-fill information
         const orderRef = firebase.firestore().collection('orders').doc(orderId);
         const orderDoc = await orderRef.get();
         const orderData = orderDoc.data();
-        
-        const existingItems = orderData.items || [];
-        const existingItemIndex = existingItems.findIndex(item => item.menuItemId === selectedItem.id);
-        
-        let updatedItems;
-        if (existingItemIndex >= 0) {
-            // Update existing item quantity
-            updatedItems = existingItems.map((item, index) => {
-                if (index === existingItemIndex) {
-                    return { ...item, quantity: item.quantity + quantity };
-                }
-                return item;
-            });
-        } else {
-            // Add new item
-            updatedItems = [...existingItems, {
-                menuItemId: selectedItem.id,
-                name: selectedItem.name,
-                price: selectedItem.price,
-                quantity: quantity
-            }];
+
+        // Switch to customer order view
+        document.getElementById('ordersView').style.display = 'none';
+        document.getElementById('orderFilters').style.display = 'none';
+        document.getElementById('customerOrderView').style.display = 'block';
+
+        // Load employee menu and show it
+        loadEmployeeMenu();
+        showEmployeeMenu();
+
+        // Pre-fill table number if available
+        if (orderData.tableNumber) {
+            document.getElementById('employeeTableNumber').value = orderData.tableNumber;
         }
-        
-        // Recalculate totals
-        const subtotal = updatedItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-        const total = subtotal;
-        
-        await orderRef.update({
-            items: updatedItems,
-            subtotal,
-            total
-        });
-        
-        showNotification('Item added to order', 'success');
-        
-        // Refresh order details
-        if (searchedOrder && searchedOrder.id === orderId) {
-            searchedOrder.items = updatedItems;
-            searchedOrder.subtotal = subtotal;
-            searchedOrder.tax = tax;
-            searchedOrder.total = total;
-            displayOrderDetails(searchedOrder);
+
+        // Pre-fill notes if available
+        if (orderData.notes) {
+            document.getElementById('employeeOrderNotes').value = orderData.notes;
         }
-        
-        loadOrders();
-        
+
+        showNotification('Select items to add to the existing order', 'info');
+
     } catch (error) {
-        console.error('Error adding item to order:', error);
-        showNotification('Error adding item to order', 'error');
+        console.error('Error opening add item interface:', error);
+        showNotification('Error opening add item interface', 'error');
     }
 }
 
