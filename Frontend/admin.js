@@ -32,9 +32,11 @@ if (typeof firebase !== 'undefined' && firebase.auth) {
 } else {
     console.error('Firebase SDK not loaded');
 }
-
+// Global variables
 let currentEditingItemId = null;
+// Categories and Food Types
 let availableCategories = [];
+// Default categories
 let availableFoodTypes = ['momo', 'naan', 'curry', 'rice', 'noodle'];
 let adminCurrentFilter = '';
 let adminOrdersUnsubscribe = null;
@@ -2210,4 +2212,55 @@ function setupMobileResponsiveness() {
         });
         item.dataset.mobileListener = 'true';
     });
-} 
+}
+
+// Double-confirm delete all orders (first confirm, then require typing the exact phrase)
+async function adminDeleteAllOrdersWithConfirmation() {
+    if (!confirm('Are you sure you want to DELETE ALL orders? This action cannot be undone.')) {
+        return;
+    }
+
+    const confirmation = prompt('Type "Delete all orders" to confirm:');
+    if (confirmation !== 'Delete all orders') {
+        showNotification('Confirmation text did not match. Aborting deletion.', 'error');
+        return;
+    }
+
+    try {
+        showNotification('Deleting all orders... Please wait.', 'info');
+
+        const ordersRef = firebase.firestore().collection('orders');
+        const snapshot = await ordersRef.get();
+
+        if (snapshot.empty) {
+            showNotification('No orders found to delete', 'warning');
+            return;
+        }
+
+        const docs = snapshot.docs;
+        const BATCH_SIZE = 500; // Firestore batch limit
+        let deletedCount = 0;
+
+        for (let i = 0; i < docs.length; i += BATCH_SIZE) {
+            const batch = firebase.firestore().batch();
+            const chunk = docs.slice(i, i + BATCH_SIZE);
+            chunk.forEach(doc => batch.delete(doc.ref));
+            await batch.commit();
+            deletedCount += chunk.length;
+        }
+
+        showNotification(`Successfully deleted ${deletedCount} orders`, 'success');
+
+        // Refresh relevant views
+        if (typeof adminLoadOrders === 'function') adminLoadOrders();
+        if (typeof loadOrders === 'function') loadOrders();
+        if (typeof loadOverview === 'function') loadOverview();
+
+    } catch (error) {
+        console.error('Error deleting all orders:', error);
+        showNotification('Error deleting all orders. Please try again.', 'error');
+    }
+}
+
+// Ensure function is available globally for inline onclick handlers
+window.adminDeleteAllOrdersWithConfirmation = adminDeleteAllOrdersWithConfirmation;
