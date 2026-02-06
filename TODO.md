@@ -1,9 +1,7 @@
 ## Summary
 The Dietary Category feature has been successfully implemented with the following components:
 
-### ✅ Completed Features:
-1. **Database Schema**: Added `supportsDietaryCategory` to categories and `dietaryCategory` to menu items
-2. **Admin Interface**:
+### ✅ Completed Features:. **Admin Interface**:
    - Added Dietary Category field to menu item forms
    - Added Supports Dietary Category checkbox to category management
    - Validation ensures supported categories require Veg/Non-Veg selection

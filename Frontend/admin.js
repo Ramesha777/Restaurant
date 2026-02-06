@@ -186,7 +186,24 @@ async function loadCategoriesAndFoodTypes() {
 function updateCategorySelect() {
     const select = document.getElementById('itemCategory');
     if (!select) return;
-    select.innerHTML = availableCategories.map(category => `<option value="${category}">${category.charAt(0).toUpperCase() + category.slice(1)}</option>`).join('');
+    
+    // Get the current value (important for editing)
+    const currentValue = select.value;
+    
+    // Combine available categories with any existing custom categories from menu items
+    let categoriesToDisplay = [...new Set([...availableCategories, ...allMenuItems.map(item => item.category).filter(Boolean)])];
+    categoriesToDisplay.sort();
+    
+    // Build the options - include a placeholder only if no value is set
+    let optionsHtml = currentValue ? '' : '<option value="">Select Category</option>';
+    optionsHtml += categoriesToDisplay.map(category => 
+        `<option value="${category}">${category.charAt(0).toUpperCase() + category.slice(1)}</option>`
+    ).join('');
+    
+    select.innerHTML = optionsHtml;
+    
+    // Restore the previous/current value if it exists
+    select.value = currentValue;
 }
 
 function updateFoodTypeSelect() {
@@ -324,36 +341,106 @@ function addNewFoodType() {
     showNotification('Food type added successfully', 'success');
 }
 
+// Store all menu items for filtering
+let allMenuItems = [];
+
 async function loadMenuItems() {
     try {
         const snapshot = await firebase.firestore().collection('menu').get();
-        const items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        allMenuItems = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
         // Sort by category in memory to avoid Firestore index requirements
-        items.sort((a, b) => (a.category || '').localeCompare(b.category || ''));
+        allMenuItems.sort((a, b) => (a.category || '').localeCompare(b.category || ''));
 
-        const menuGrid = document.getElementById('menuGrid');
-        menuGrid.innerHTML = items.map(item => `
-            <div class="menu-item-card">
-                ${item.image ? `<img src="${item.image}" alt="${item.name}">` : ''}
-                <h3>${item.name}</h3>
-                <p style="color: #666; font-size: 0.9rem; margin: 0.5rem 0;">${item.description || ''}</p>
-                <div class="price">£${(item.price || 0).toFixed(2)}</div>
-                <div style="font-size: 0.85rem; color: #666;">
-                    Category: ${item.category} | Type: ${item.foodType || 'N/A'}
-                    ${item.spicyLevel === 'ask' ? '| 🌶️ Ask for Spicy Level' : ''}
-                    ${item.available !== false ? '✅ Available' : '❌ Unavailable'}
-                </div>
-                <div class="menu-item-actions">
-                    <button class="btn btn-edit btn-small" onclick="editMenuItem('${item.id}')">Edit</button>
-                    <button class="btn btn-danger btn-small" onclick="deleteMenuItem('${item.id}')">Delete</button>
-                </div>
-            </div>
-        `).join('');
+        displayMenuItems(allMenuItems);
+        
+        // Update category filter dropdown with available categories from menu items
+        updateCategoryFilterDropdown();
     } catch (error) {
         console.error('Error loading menu items:', error);
         showNotification('Error loading menu items', 'error');
     }
+}
+
+function displayMenuItems(items) {
+    const menuGrid = document.getElementById('menuGrid');
+    if (items.length === 0) {
+        menuGrid.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: #666;">No menu items found in this category.</p>';
+        return;
+    }
+    
+    menuGrid.innerHTML = items.map(item => `
+        <div class="menu-item-card">
+            ${item.image ? `<img src="${item.image}" alt="${item.name}">` : ''}
+            <h3>${item.name}</h3>
+            <p style="color: #666; font-size: 0.9rem; margin: 0.5rem 0;">${item.description || ''}</p>
+            <div class="price">£${(item.price || 0).toFixed(2)}</div>
+            <div style="font-size: 0.85rem; color: #666;">
+                Category: ${item.category} | Type: ${item.foodType || 'N/A'}
+                ${item.spicyLevel === 'ask' ? '| 🌶️ Ask for Spicy Level' : ''}
+                ${item.available !== false ? '✅ Available' : '❌ Unavailable'}
+            </div>
+            <div class="menu-item-actions">
+                <button class="btn btn-edit btn-small" onclick="editMenuItem('${item.id}')">Edit</button>
+                <button class="btn btn-danger btn-small" onclick="deleteMenuItem('${item.id}')">Delete</button>
+            </div>
+        </div>
+    `).join('');
+}
+
+function updateCategoryFilterDropdown() {
+    const filterSelect = document.getElementById('categoryFilter');
+    // Get unique categories from menu items
+    const uniqueCategories = [...new Set(allMenuItems.map(item => item.category).filter(Boolean))];
+    uniqueCategories.sort();
+    
+    // Keep the "All Categories" option and add the unique categories
+    const currentValue = filterSelect.value;
+    filterSelect.innerHTML = '<option value="">All Categories</option>' +
+        uniqueCategories.map(category => `<option value="${category}">${category.charAt(0).toUpperCase() + category.slice(1)}</option>`).join('');
+    
+    // Restore the previous selection if it still exists
+    filterSelect.value = currentValue;
+}
+
+// Apply combined category + search filters
+function applyMenuFilters() {
+    const selectedCategory = document.getElementById('categoryFilter').value;
+    const searchQuery = document.getElementById('menuSearchInput').value.trim().toLowerCase();
+    
+    let filteredItems = allMenuItems.slice();
+    
+    // Apply category filter
+    if (selectedCategory) {
+        filteredItems = filteredItems.filter(item => item.category === selectedCategory);
+    }
+    
+    // Apply search filter
+    if (searchQuery) {
+        filteredItems = filteredItems.filter(item => 
+            (item.name || '').toLowerCase().includes(searchQuery)
+        );
+    }
+    
+    displayMenuItems(filteredItems);
+}
+
+function filterMenuByCategory() {
+    applyMenuFilters();
+}
+
+function clearCategoryFilter() {
+    document.getElementById('categoryFilter').value = '';
+    applyMenuFilters();
+}
+
+function searchMenuByName() {
+    applyMenuFilters();
+}
+
+function clearMenuSearch() {
+    document.getElementById('menuSearchInput').value = '';
+    applyMenuFilters();
 }
 
 async function loadOrders() {
@@ -1729,7 +1816,7 @@ async function adminPrintBill(orderOrId) {
         </head>
         <body>
             <div class="header">
-                <h1>Ramesh DaDa Restaurant</h1>
+                <h1>WHITMORE REANS</h1>
                 <p>Restaurant Bill</p>
             </div>
 

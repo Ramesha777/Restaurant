@@ -33,7 +33,7 @@
     <div class="dashboard">
         <div class="sidebar">
             <div style="padding: 0 2rem; margin-bottom: 2rem;">
-                <h2>Ramesh DaDa Restaurant</h2>
+                <h2>WHITMORE REANS</h2>
                 <p style="opacity: 0.8; font-size: 0.9rem;">Admin Dashboard</p>
             </div>
             <ul class="sidebar-menu">
@@ -94,11 +94,27 @@
 
             <!-- Menu Management Section -->
             <div class="content-section" id="menu">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem;">
                     <h1>Menu Management</h1>
-                    <button class="btn btn-primary" onclick="openAddMenuItemModal()">+ Add Menu Item</button>
+                    <div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
+                        <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                            <label for="menuSearchInput" style="font-weight: bold; color: #333;">Search by Name:</label>
+                            <div style="display: flex; gap: 0.5rem; align-items: flex-end;">
+                                <input type="text" id="menuSearchInput" placeholder="Search food items..." onkeyup="searchMenuByName()" style="padding: 0.75rem; border: 2px solid #333; border-radius: 8px; font-size: 1rem; min-width: 200px;">
+                                <button class="btn btn-secondary" onclick="clearMenuSearch()" style="padding: 0.75rem 1rem;">Clear</button>
+                            </div>
+                        </div>
+                        <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                            <label for="categoryFilter" style="font-weight: bold; color: #333;">Filter by Category:</label>
+                            <select id="categoryFilter" onchange="filterMenuByCategory()" style="padding: 0.75rem; border: 2px solid #333; border-radius: 8px; font-size: 1rem; min-width: 200px;">
+                                <option value="">All Categories</option>
+                                <!-- Categories will be loaded here -->
+                            </select>
+                        </div>
+                        <button class="btn btn-secondary" onclick="clearCategoryFilter()" style="padding: 0.75rem 1.5rem; align-self: flex-end;">Clear Filter</button>
+                        <button class="btn btn-primary" onclick="openAddMenuItemModal()" style="padding: 0.75rem 1.5rem; align-self: flex-end;">+ Add Menu Item</button>
+                    </div>
                 </div>
-
 
                 <div id="menuGrid" class="menu-grid-admin">
                     <!-- Menu items for management will be loaded here by loadMenuItems() -->
@@ -331,7 +347,7 @@
                     </div>
                     <div class="form-group">
                         <label>Food Type</label>
-                        <select id="itemFoodType" required>
+                        <select id="itemFoodType">
                             <option value="">Select Food Type</option>
                             <!-- Food types will be loaded dynamically -->
                         </select>

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Employee Dashboard - Savory Haven</title>
+    <title>Employee Dashboard - WHITMORE REANS</title>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="employee.css">
     <link rel="stylesheet" href="customer/customer.css">
@@ -71,6 +71,7 @@
             <div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; width: 100%;">
                 <div style="flex: 1; min-width: 200px;">
                     <input type="text" id="orderSearchInput" placeholder="Search by Order Number (e.g., 1234)" 
+                    <input type="text" id="orderSearchInput" placeholder="Search by Order # or Customer Name" 
                            style="width: 100%; padding: 0.75rem; border: 2px solid black; border-radius: 8px; font-size: 1rem;"
                            onkeyup="handleOrderSearch(event)">
                     <button class="btn btn-secondary" onclick="searchOrder()" style="margin-top: 0.5rem; width: 50%; background:orangered">Search Order</button>
@@ -112,6 +113,11 @@
 
             <!-- Menu View -->
             <div id="employeeMenuView">
+                <div style="margin-bottom: 1rem;">
+                    <input type="text" id="employeeMenuSearchInput" placeholder="Search food items..." 
+                           style="width: 100%; padding: 0.75rem; border: 2px solid #ddd; border-radius: 8px; font-size: 1rem;"
+                           onkeyup="searchEmployeeMenuByName()">
+                </div>
                 <div id="employeeCategoryFilters" class="order-filters" style="margin-bottom: 2rem;">
                 </div>
                 <div class="menu-grid" id="employeeMenuGrid">

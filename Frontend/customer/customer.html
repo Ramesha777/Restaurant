@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Customer Menu - Ramesh DaDa Restaurant</title>
+    <title>Customer Menu - WHITMORE REANS Restaurant</title>
     <link rel="stylesheet" href="../style.css">
     <link rel="stylesheet" href="customer.css">
     <style>
@@ -67,6 +67,11 @@
         <div class="content-section active" id="menuSection">
             <div class="page-header">
                 <h1>Our Menu</h1>
+                <div style="margin-bottom: 1rem; width: 100%;">
+                    <input type="text" id="menuSearchInput" placeholder="Search food items..." 
+                           style="width: 100%; padding: 0.75rem; border: 2px solid #ddd; border-radius: 8px; font-size: 1rem;"
+                           onkeyup="searchMenuByName()">
+                </div>
                 <div id="filterContainer" class="category-filters">
                 </div>
             </div>
@@ -80,7 +85,7 @@
         <div class="content-section" id="cartSection">
             <div class="page-header">
                 <h1>Your Cart</h1>
-                <button class="btn btn-secondary" onclick="showMenu()">← Back to Menu</button>
+                <button class="btn btn-secondary" onclick="showMenu()" style="color:white; background: #4caf50;">← Back to Menu</button>
             </div>
 
             <div class="cart-container" id="cartContainer">

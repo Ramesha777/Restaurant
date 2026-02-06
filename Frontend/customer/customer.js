@@ -5,8 +5,10 @@ let menuItems = [];
 let currentCategory = '';
 let currentFoodType = '';
 let availableCategories = [];
+let currentSearchQuery = '';
 let availableFoodTypes = [];
 let sidebarCollapsed = false;
+let pendingSpicyItem = null;
 
 // Initialize on page load - Firebase is initialized in Backend/firebase.js
 window.addEventListener('DOMContentLoaded', () => {
@@ -181,8 +183,21 @@ function filterBySubcategory(category, subcategory) {
     renderMenu();
 }
 
+function searchMenuByName() {
+    const searchInput = document.getElementById('menuSearchInput');
+    currentSearchQuery = searchInput.value.trim().toLowerCase();
+    renderMenu();
+}
+
 function renderMenu() {
     let filteredItems = menuItems;
+
+    // Apply search filter
+    if (currentSearchQuery) {
+        filteredItems = filteredItems.filter(item => 
+            (item.name || '').toLowerCase().includes(currentSearchQuery)
+        );
+    }
 
     // Apply category filter
     if (currentCategory) {
@@ -197,13 +212,18 @@ function renderMenu() {
     const menuGrid = document.getElementById('menuGrid');
 
     if (filteredItems.length === 0) {
-        const filterText = currentCategory && currentFoodType
-            ? `in ${currentCategory} category and ${currentFoodType} type`
-            : currentCategory
-                ? `in ${currentCategory} category`
-                : currentFoodType
-                    ? `of ${currentFoodType} type`
-                    : 'in this category';
+        let filterText;
+        if (currentSearchQuery) {
+            filterText = `matching "${currentSearchQuery}"`;
+        } else if (currentCategory && currentFoodType) {
+            filterText = `in ${currentCategory} category and ${currentFoodType} type`;
+        } else if (currentCategory) {
+            filterText = `in ${currentCategory} category`;
+        } else if (currentFoodType) {
+            filterText = `of ${currentFoodType} type`;
+        } else {
+            filterText = 'in this category';
+        }
         menuGrid.innerHTML = `<p style="text-align: center; color: #666; grid-column: 1/-1;">No items found ${filterText}</p>`;
         return;
     }

@@ -248,6 +248,7 @@ let employeeMenuItems = [];
 let employeeCurrentCategory = '';
 let employeeCurrentFoodType = '';
 let pendingEmployeeSpicyItem = null;
+let employeeCurrentSearchQuery = '';
 
 function toggleEmployeeView() {
     const ordersView = document.getElementById('ordersView');
@@ -345,8 +346,21 @@ function filterEmployeeBySubcategory(category, subcategory) {
     renderEmployeeMenu();
 }
 
+function searchEmployeeMenuByName() {
+    const searchInput = document.getElementById('employeeMenuSearchInput');
+    employeeCurrentSearchQuery = searchInput.value.trim().toLowerCase();
+    renderEmployeeMenu();
+}
+
 function renderEmployeeMenu() {
     let filteredItems = employeeMenuItems;
+
+    // Apply search filter
+    if (employeeCurrentSearchQuery) {
+        filteredItems = filteredItems.filter(item => 
+            (item.name || '').toLowerCase().includes(employeeCurrentSearchQuery)
+        );
+    }
 
     // Apply category filter
     if (employeeCurrentCategory) {
@@ -361,7 +375,9 @@ function renderEmployeeMenu() {
     const menuGrid = document.getElementById('employeeMenuGrid');
 
     if (filteredItems.length === 0) {
-        const filterText = employeeCurrentCategory && employeeCurrentFoodType
+        const filterText = employeeCurrentSearchQuery 
+            ? `matching "${employeeCurrentSearchQuery}"`
+            : employeeCurrentCategory && employeeCurrentFoodType
             ? `in ${employeeCurrentCategory} category and ${employeeCurrentFoodType} type`
             : employeeCurrentCategory
                 ? `in ${employeeCurrentCategory} category`
@@ -1287,7 +1303,7 @@ async function printCustomerBill(orderOrId) {
         </head>
         <body>
             <div class="header">
-                <h1>Ramesh DaDa Restaurant</h1>
+                <h1>WHITMORE REANS BAR GRILL AND RESTAURANT</h1>
                 <p>Restaurant Bill</p>
             </div>
 
