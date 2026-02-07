@@ -209,8 +209,21 @@ function updateCategorySelect() {
 function updateFoodTypeSelect() {
     const select = document.getElementById('itemFoodType');
     if (!select) return;
+
+    const currentValue = select.value;
+
+    // Combine available food types with any existing custom food types from menu items
+    let typesToDisplay = [...new Set([...availableFoodTypes, ...allMenuItems.map(item => item.foodType).filter(Boolean)])];
+    
+    if (currentValue && !typesToDisplay.includes(currentValue)) {
+        typesToDisplay.push(currentValue);
+    }
+    typesToDisplay.sort();
+
     select.innerHTML = '<option value="">Select Food Type</option>' +
-        availableFoodTypes.map(type => `<option value="${type}">${type.charAt(0).toUpperCase() + type.slice(1)}</option>`).join('');
+        typesToDisplay.map(type => `<option value="${type}">${type.charAt(0).toUpperCase() + type.slice(1)}</option>`).join('');
+    
+    select.value = currentValue;
 }
 
 function updateAdminFoodTypeFilters() {
@@ -2351,3 +2364,24 @@ async function adminDeleteAllOrdersWithConfirmation() {
 
 // Ensure function is available globally for inline onclick handlers
 window.adminDeleteAllOrdersWithConfirmation = adminDeleteAllOrdersWithConfirmation;
+
+
+// Ensuring the foodtype is stored while editing an menu item by admin
+async function adminUpdateMenuItem(itemId, newName, newPrice, newFoodType) {
+    try {
+        const itemRef = firebase.firestore().collection('menuItems').doc(itemId);
+        const itemDoc = await itemRef.get();
+        const itemData = itemDoc.data();
+        await itemRef.update({
+            name: newName,
+            price: parseFloat(newPrice),
+            foodType: newFoodType || itemData.foodType, // Keep existing food type if not provided
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        showNotification('Menu item updated successfully', 'success');
+        loadAdminMenu();
+    } catch (error) {
+        console.error('Error updating menu item:', error);
+        showNotification('Error updating menu item', 'error');
+    }
+}
